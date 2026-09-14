@@ -1,0 +1,8 @@
+{
+  "name": "appfoyer",
+  "owner": { "name": "AppFoyer", "url": "https://appfoyer.com" },
+  "metadata": { "description": "AppFoyer — store-compliance pages for mobile apps, drafted by your agent from the real codebase." },
+  "plugins": [
+    { "name": "appfoyer", "source": "./", "description": "Draft store-compliance pages for the app in the current repository. Nothing is published without your click." }
+  ]
+}
