@@ -31,6 +31,9 @@ URLs). Never file contents, never source code, never secrets. The API key travel
 
 Revoke the key at any time in the dashboard; the next call fails immediately.
 
+Staging or self-hosted endpoint: set `APPFOYER_MCP_URL` (default `https://app.appfoyer.com/mcp`)
+before starting Claude Code, e.g. `export APPFOYER_MCP_URL=https://staging.appfoyer.com/mcp`.
+
 ## Guarantees
 
 - Nothing goes public without your click on the review screen.
