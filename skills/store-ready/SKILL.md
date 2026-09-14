@@ -28,10 +28,12 @@ re-export an agent key at the connect URL in the error. Do not retry.
 
 ### 1. Detect platform and identity — from files, never by asking
 
-Read only build and manifest files: `build.gradle(.kts)`, `settings.gradle`, `gradle/libs.versions.toml`,
-`AndroidManifest.xml`, `res/values/strings.xml`, `Podfile`, `Podfile.lock`, `Package.swift`,
-`*.xcodeproj/project.pbxproj`, `Info.plist`, `pubspec.yaml`, `package.json`, `app.json`, fastlane
-`Appfile`/`Deliverfile`, `LICENSE`, `README*`. Do not open source files, `.env*`, keystores or CI secrets.
+Read only build, manifest and store-metadata files: `build.gradle(.kts)`, `settings.gradle`,
+`gradle/libs.versions.toml`, `AndroidManifest.xml`, `res/values/strings.xml`, `Podfile`, `Podfile.lock`,
+`Package.swift`, `*.xcodeproj/project.pbxproj`, `Info.plist` and other `*.plist` config files,
+`PrivacyInfo.xcprivacy`, `pubspec.yaml`, `package.json`, `app.json`, fastlane `Appfile`/`Deliverfile`
+and `fastlane/metadata/**`, store listing texts (`appstore/`, `playstore/`, `metadata/`), `LICENSE`,
+`README*`. Do not open source files, `.env*`, keystores or CI secrets.
 
 Derive: platform, app name, application/bundle id, proposed Android store URL. Details:
 `references/sdk-map.md`.
@@ -47,10 +49,13 @@ Call `list_apps`. If an app matches by name or store URL, this is a **re-run**: 
 diff your fact list against `dataCollection`, and continue with `update_app` + drafts for the
 pages the diff touches only. Otherwise continue with a new app.
 
-### 4. Show facts, ask the gaps — one message
+### 4. Show facts, then ask the gaps — interactively
 
-Follow `references/questions.md` exactly: fact list with sources first, then the numbered
-questions with proposed defaults. Wait for the answer. Nothing has been sent yet.
+Print the fact list with sources first (plain text, so the developer can read it). Then ask with
+the **`AskUserQuestion` tool** — selectable options, proposed defaults pre-filled as the first
+option, "Other" for free text — in at most two rounds of ≤ 4 questions each, exactly as laid out
+in `references/questions.md`. If the tool is not available in this agent, fall back to the plain
+numbered list in the same file. Wait for the answers. Nothing has been sent yet.
 
 ### 5. `create_app` (or `update_app`)
 
@@ -105,8 +110,13 @@ Publish."** Then print the paste table:
 | App Store Connect → App Privacy → Privacy Policy URL | `<site>/privacy` |
 | App Store Connect → App Information → Support URL | `<site>/support` |
 
-Those fields live in the store consoles; you cannot fill them. Do not open a browser, do not poll,
-do not call anything else.
+Those fields live in the store consoles; you cannot fill them.
+
+Then offer one last choice with `AskUserQuestion` (or plain text): **"Show me each draft here"**
+or **"I'll review in the dashboard"**. On the first, print every draft's Markdown in full, one
+page per message, and repeat the review URL at the end. Publishing itself always happens on the
+review screen — it shows the rendered page next to the live one with the moderation result, which
+a terminal cannot. Do not open a browser, do not poll, do not call anything else.
 
 ## Wire mode (after publishing)
 
