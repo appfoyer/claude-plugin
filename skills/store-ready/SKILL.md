@@ -24,6 +24,9 @@ secrets, keystores or `.env` values. Never read or print `APPFOYER_API_KEY`.
 If a tool call fails with `missing_scope` or an HTTP 401, stop and tell the developer to create or
 re-export an agent key at the connect URL in the error. Do not retry.
 
+A JSON-RPC **validation error** (`-32602`, e.g. "Too big … <=102400" on `markdown`) means nothing
+was written. Treat it like a `too_large` result: shorten the draft and re-send once.
+
 ## Draft mode
 
 ### 1. Detect platform and identity — from files, never by asking
@@ -31,7 +34,7 @@ re-export an agent key at the connect URL in the error. Do not retry.
 Read only build, manifest and store-metadata files: `build.gradle(.kts)`, `settings.gradle`,
 `gradle/libs.versions.toml`, `AndroidManifest.xml`, `res/values/strings.xml`, `Podfile`, `Podfile.lock`,
 `Package.swift`, `*.xcodeproj/project.pbxproj`, `Info.plist` and other `*.plist` config files,
-`PrivacyInfo.xcprivacy`, `pubspec.yaml`, `package.json`, `app.json`, fastlane `Appfile`/`Deliverfile`
+`*.entitlements`, `PrivacyInfo.xcprivacy`, `*.storekit`, `pubspec.yaml`, `package.json`, `app.json`, fastlane `Appfile`/`Deliverfile`
 and `fastlane/metadata/**`, store listing texts (`appstore/`, `playstore/`, `metadata/`), `LICENSE`,
 `README*`. Do not open source files, `.env*`, keystores or CI secrets.
 
@@ -41,7 +44,10 @@ Derive: platform, app name, application/bundle id, proposed Android store URL. D
 ### 2. Derive data-collection facts
 
 Map dependencies and permissions to `account | analytics | ads | crash | location | purchases | none`
-with `references/sdk-map.md`. Keep the **file and line** for every fact.
+with `references/sdk-map.md`. Keep the **file and line** for every fact. Usage-description keys
+and permissions with no `dataCollection` bucket (Face ID, camera, notifications…) are still
+permission facts — keep them with file:line for the privacy page's permissions section. README
+prose ("sign in with Google") is a hint for question defaults, never a fact on its own.
 
 ### 3. Check for an existing app (re-runs)
 
@@ -96,7 +102,8 @@ If a reason remains, leave it — the developer will see it on the review screen
 ### 7. `set_ad_lines` — only with an ads fact and publisher lines
 
 If the developer gave publisher lines, send them as-is. If they said "later", skip and say where
-to add them (Dashboard → app-ads.txt). Mention that app-ads.txt hosting is **Beta**.
+to add them (Dashboard → app-ads.txt). Remind them to set the site as the developer website in the
+store listing — AdMob crawls the hostname of that URL.
 
 ### 8. `request_publish` and stop
 

@@ -1,6 +1,6 @@
 {
   "name": "appfoyer",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Make a mobile app store-ready from its own codebase: drafts the privacy policy, terms, support and account-deletion pages plus app-ads.txt on AppFoyer. You review and publish.",
   "author": { "name": "AppFoyer", "url": "https://appfoyer.com" },
   "homepage": "https://appfoyer.com",

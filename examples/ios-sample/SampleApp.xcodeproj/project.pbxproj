@@ -1,0 +1,17 @@
+// !$*UTF8*$!
+// Trimmed to the settings the skill reads.
+{
+	archiveVersion = 1;
+	objectVersion = 56;
+	objects = {
+		0001 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				PRODUCT_BUNDLE_IDENTIFIER = com.example.pocketledger;
+				PRODUCT_NAME = PocketLedger;
+				INFOPLIST_FILE = SampleApp/Info.plist;
+			};
+			name = Debug;
+		};
+	};
+}

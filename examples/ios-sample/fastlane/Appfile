@@ -1,0 +1,5 @@
+app_identifier("com.example.pocketledger")
+apple_id("dev@pocketledger.example")
+team_id("ABCDE12345")
+# App Store Connect app id
+apple_app_id("1234567890")

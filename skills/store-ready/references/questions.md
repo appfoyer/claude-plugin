@@ -17,10 +17,10 @@ questions whose condition holds. Never ask for anything derived.
 
 | # | Question | Options |
 |---|---|---|
-| 1 | Are these facts complete and correct? | "Yes, all correct" · "Other" → the developer strikes or adds |
-| 2 | Legal name shown on the policy | proposed value (from LICENSE / package author / git user.name) · "Other" |
+| 1 | Are these facts complete and correct? | "Yes, all correct" · "Mostly — I'll correct below" · "Other" → the developer strikes or adds |
+| 2 | Legal name shown on the policy | proposed value (from LICENSE / package author; `git config user.name` only when the repo root is the app itself) · "Other" |
 | 3 | Support email | proposed value (README / LICENSE / plist / git user.email) · "Other" |
-| 4 | Country whose law applies | up to 3 guesses from hints (store metadata locale, developer name, TLD of existing site) as 2-letter codes · "Skip for now" · "Other" |
+| 4 | Country whose law applies | as many guesses as the hints justify, 0–3 (store metadata locale, legal form like LLC/OÜ/GmbH, TLD of existing site) as 2-letter codes · "Skip for now" · "Other" |
 
 ## Round 2 — store and conditionals (only the rows that apply)
 
@@ -28,11 +28,11 @@ questions whose condition holds. Never ask for anything derived.
 |---|---|---|---|
 | 5 | Android detected | Play Store URL | proposed `https://play.google.com/store/apps/details?id=<applicationId>` · "Not listed yet" · "Other" |
 | 6 | iOS detected | App Store URL | proposed `https://apps.apple.com/app/id<numeric id>` when an id was found · "Not listed yet" · "Other" |
-| 7 | `ads` fact | app-ads.txt publisher lines | "Later — I'll add them in the dashboard" · "Other" → paste lines |
+| 7 | `ads` fact | app-ads.txt publisher lines | proposed AdMob line when the app id was found in the manifest/plist · "Later — I'll add them in the dashboard" · "Other" → paste lines |
 | 8 | `purchases` fact | Products to describe in the terms | found product names/prices as one option ("Use these: …") · "Not applicable" · "Other" |
-| 9 | `account` fact | How is sign-in used? | "Anonymous / device sign-in only" · "Users create accounts" · "Not used at runtime" |
+| 9 | `account` fact | How is sign-in used? | "Users create accounts" · "Anonymous / device sign-in only" · "Not used at runtime" — reorder so the option the README / entitlements support comes first |
 
-If more than 4 rows apply in round 2, split into two calls; keep 5–6 together.
+If more than 4 rows apply in round 2, split into two calls; keep 5–6 together (three calls in total is then allowed).
 
 ## Fallback (agent without `AskUserQuestion`)
 
