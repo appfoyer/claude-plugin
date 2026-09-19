@@ -13,6 +13,35 @@ Then ask with **`AskUserQuestion`**. Each call takes up to 4 questions; each que
 options plus an automatic "Other" for free text. Put the proposed default **first**. Ask only the
 questions whose condition holds. Never ask for anything derived.
 
+## Round 0 — flavors (only when the build has product flavors *and* the prompt named no package ids)
+
+Ask this **before** Round 1: the answer decides how many apps exist and whose facts go on which
+page. Skip it entirely when the developer's prompt already named the package ids — they have
+answered it.
+
+Show what you found first, one line per flavor:
+
+```
+This build ships 3 flavors:
+- free        com.acme.weather.free        app/build.gradle:52 · src/free/AndroidManifest.xml
+- pro         com.acme.weather.pro         app/build.gradle:57
+- staging     com.acme.weather.debug       build type, not a store listing — excluded
+```
+
+| # | Question | Options |
+|---|---|---|
+| 0 | Which flavors should get their own store-ready site? (`multiSelect: true`) | one option per shipped flavor, labelled `<flavor> — <applicationId>`, all pre-selected · "Other" → the developer names a subset or a flavor you missed |
+
+Then ask the display name only where it is not already answered: a flavor with its own
+`app_name` / `CFBundleDisplayName` needs no question; otherwise offer `<base name> <Flavor>` as the
+first option. Two apps must never end up with the same name — the developer cannot tell them apart
+in the dashboard.
+
+Rounds 1 and 2 then run **once** for the values that are the same across flavors (legal name,
+support email, jurisdiction) and **per flavor** for the ones that are not: the store URL, the
+publisher lines and any conditional question whose fact exists in one flavor and not another. Say
+which flavor you are asking about in the question text.
+
 ## Round 1 — identity (always)
 
 | # | Question | Options |
@@ -41,6 +70,7 @@ and wait for the reply.
 
 ## Rules
 
+- Never ask which flavor a fact belongs to — the source set and the dependency configuration say so.
 - Legal name and support email are **always confirmed**, even with a good default — they end up
   in legal text.
 - Jurisdiction is always asked; "Skip for now" keeps the template neutral.

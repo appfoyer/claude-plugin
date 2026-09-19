@@ -1,6 +1,6 @@
 ---
 name: store-ready
-description: Make the mobile app in this repository store-ready on AppFoyer — derive data-collection facts from the build files, draft the privacy policy, terms, support and account-deletion pages plus app-ads.txt, and hand the developer a review link. Use when the developer says "make this app store-ready", asks for a privacy policy / account-deletion URL / app-ads.txt for their app, asks "is this app store-ready?", or asks to wire the published links into the app.
+description: Make the mobile app in this repository store-ready on AppFoyer — derive data-collection facts from the build files, draft the privacy policy, terms, support and account-deletion pages plus app-ads.txt, and hand the developer a review link. Use when the developer says "make this app store-ready", asks for a privacy policy / account-deletion URL / app-ads.txt for their app, asks "is this app store-ready?", asks for a specific flavor or package id to be made store-ready, or asks to wire the published links into the app.
 ---
 
 # Store-ready (AppFoyer)
@@ -17,8 +17,8 @@ secrets, keystores or `.env` values. Never read or print `APPFOYER_API_KEY`.
 
 | Developer says | Mode |
 |---|---|
-| "Make this app store-ready", "I need a privacy policy / deletion URL / app-ads.txt" | **Draft** (below) |
-| "Is this app store-ready?", "what's missing for the store?" | **Audit**: steps 1–2, then `get_checklist` for the existing app (or say no app exists yet). No writes. |
+| "Make this app store-ready", "I need a privacy policy / deletion URL / app-ads.txt", "…for com.acme.app.pro" | **Draft** (below) |
+| "Is this app store-ready?", "what's missing for the store?" | **Audit**: steps 1–2 (including flavor detection, 1b), then `get_checklist` for each matching existing app — a flavor with no app is itself the finding. No writes. |
 | "Wire the store-ready links into the app", "add the privacy link to settings" | **Wire**: see the last section. Requires published pages. |
 
 If a tool call fails with `missing_scope` or an HTTP 401, stop and tell the developer to create or
@@ -38,8 +38,33 @@ Read only build, manifest and store-metadata files: `build.gradle(.kts)`, `setti
 and `fastlane/metadata/**`, store listing texts (`appstore/`, `playstore/`, `metadata/`), `LICENSE`,
 `README*`. Do not open source files, `.env*`, keystores or CI secrets.
 
-Derive: platform, app name, application/bundle id, proposed Android store URL. Details:
+Derive: platform, app name, application/bundle id, proposed Android store URL, **and the build's
+product flavors** (Gradle `productFlavors`, Xcode targets/schemes with their own bundle id). Details:
 `references/sdk-map.md`.
+
+### 1b. Flavors — one shipped flavor is one app
+
+A flavor that ships to a store under its **own application/bundle id** is its own store listing, so
+it needs its own pages, its own `/account-deletion` and its own `app-ads.txt` — one AppFoyer app per
+flavor. Build types (`debug`, `staging`, an `applicationIdSuffix` on a non-shipped variant) are
+**not** flavors: never make an app for one.
+
+- **The developer's prompt named package ids** ("make the pro and enterprise flavors store-ready",
+  `com.acme.app.pro com.acme.app.lite`) → use exactly those and ask nothing about the selection.
+  An id that matches no flavor in the build is an error: say which ids you found and stop. Do not
+  substitute the closest one.
+- **Flavors found, none named** → list them (flavor name, application id, source) and ask which to
+  make store-ready with the multi-select question in `references/questions.md` (Round 0). The
+  default selection is every flavor with a distinct application id that is not a debug/staging
+  variant.
+- **No flavors** → one app, exactly as before. Do not ask the question.
+
+Facts are derived **per flavor**: shared facts (the `main` source set and plain `implementation`
+lines) plus that flavor's own (`<flavor>Implementation` / `<flavor>Api` dependencies,
+`src/<flavor>/AndroidManifest.xml`, `src/<flavor>/res/values/strings.xml`, its `.xcconfig` or
+target-level settings). A free flavor's ad SDK is a fact about the free flavor only — never write it
+into the paid flavor's privacy policy. Each flavor also gets its own proposed store URL, built from
+its own application id.
 
 ### 2. Derive data-collection facts
 
@@ -51,9 +76,11 @@ prose ("sign in with Google") is a hint for question defaults, never a fact on i
 
 ### 3. Check for an existing app (re-runs)
 
-Call `list_apps`. If an app matches by name or store URL, this is a **re-run**: call `get_app`,
-diff your fact list against `dataCollection`, and continue with `update_app` + drafts for the
-pages the diff touches only. Otherwise continue with a new app.
+Call `list_apps`. Match **per selected flavor**, in this order: the application id inside the Play
+URL (`…details?id=<applicationId>`), then the app name. A match is a **re-run** for that flavor:
+call `get_app`, diff your fact list against `dataCollection`, and continue with `update_app` +
+drafts for the pages the diff touches only. Unmatched flavors are new apps. A flavor set is often
+half and half — re-run two, create one — so decide this one flavor at a time, never for the batch.
 
 ### 4. Show facts, then ask the gaps — interactively
 
@@ -63,9 +90,20 @@ option, "Other" for free text — in at most two rounds of ≤ 4 questions each,
 in `references/questions.md`. If the tool is not available in this agent, fall back to the plain
 numbered list in the same file. Wait for the answers. Nothing has been sent yet.
 
-### 5. `create_app` (or `update_app`)
+### 5. `create_app` / `create_apps` (or `update_app`)
 
-Send the confirmed values once. Outcomes:
+Send the confirmed values once. One new app → `create_app`. Two or more (a flavor set) →
+**`create_apps`**, up to 10 per call, one entry per flavor with that flavor's own name, facts and
+store URLs; split a longer set across calls. Every app is created unpublished, scored and
+limit-checked on its own.
+
+`create_apps` answers with `created`, `failed` and `skipped` — report all three. A failed entry
+never discards the others: keep drafting for what was created, show every reason for what was not.
+If the result carries `publishLimit`, the plan has fewer free slots than the flavors you just
+created: say the numbers plainly (`remaining` of `limit`), keep drafting all of them, and let the
+developer choose which to publish or upgrade. Never drop a flavor on your own to fit the plan.
+
+Outcomes per entry:
 
 - **`quota` present** → the app exists but cannot be published (plan limit). Say, in one sentence,
   that it was created unpublished and give `dashboardUrl`. **Keep drafting** — the drafts are
@@ -75,6 +113,10 @@ Send the confirmed values once. Outcomes:
 - **`too_many_apps`** → tell the developer to delete an app in the dashboard; stop.
 
 ### 6. Draft the five pages with `set_page`
+
+With several flavors, do this for **each app in turn**, with that flavor's own fact list, name and
+store URLs. Never reuse one flavor's draft for another by search-and-replacing the name: the data
+facts, the permissions and the store links are what differ, and they are the content that matters.
 
 Start from the **template text** in `get_app` → `pages[*].markdown` (it already contains the
 disclaimer block and the `{{variables}}` filled from Settings — keep both). Edit it into a page
@@ -117,7 +159,10 @@ Publish."** Then print the paste table:
 | App Store Connect → App Privacy → Privacy Policy URL | `<site>/privacy` |
 | App Store Connect → App Information → Support URL | `<site>/support` |
 
-Those fields live in the store consoles; you cannot fill them.
+Those fields live in the store consoles; you cannot fill them. With several flavors, call
+`request_publish` for each app and print one table **per flavor**, headed by its application id —
+the consoles are per listing, and pasting one flavor's URLs into another's listing is a store
+rejection waiting to happen.
 
 Then offer one last choice with `AskUserQuestion` (or plain text): **"Show me each draft here"**
 or **"I'll review in the dashboard"**. On the first, print every draft's Markdown in full, one
@@ -136,6 +181,8 @@ a terminal cannot. Do not open a browser, do not poll, do not call anything else
 ## Never
 
 - Publish, or ask the developer for the key so you can "do it manually".
+- Create an app for a build type (`debug`, `staging`) or for a flavor the developer did not select.
+- Share one flavor's facts, pages or store links with another flavor.
 - Send file contents or source, run builds, or modify the repository in Draft/Audit mode.
 - Claim a store will accept the pages, or that `app-ads.txt` is verified with any ad network.
 - Present the drafts as legal advice.

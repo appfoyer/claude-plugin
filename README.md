@@ -21,6 +21,14 @@ Then, inside your app's repository:
 | `Make this app store-ready` | scan → confirm facts → draft pages → review link |
 | `Is this app store-ready?` | read-only audit against the compliance checklist |
 | `Wire the store-ready links into the app` | after publishing: proposes the in-app privacy/support links as a diff |
+| `Make com.acme.app.pro store-ready` | multi-flavor build: only the named flavors get a site |
+
+**Multi-flavor builds:** a Gradle product flavor or Xcode target that ships under its own
+application id is its own store listing, so it gets its own site — its own pages, its own
+`/account-deletion` and its own `app-ads.txt`. The agent finds the flavors in the build files,
+derives each one's SDKs and permissions separately (a free flavor's ad SDK never lands in the paid
+flavor's privacy policy) and asks which ones to set up. Name the package ids in your prompt and it
+skips the question. Build types (`debug`, `staging`) never get a site.
 
 ## What leaves your machine
 
