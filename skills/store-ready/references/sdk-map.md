@@ -71,3 +71,29 @@ Also derive (not a `dataCollection` key, but used in the pages and the questions
 - **Per-flavor store URL**: build each flavor's proposal from **its own** application id. Two
   flavors sharing one Play URL is always a mistake in the derivation.
 - **Children / age gate**: `com.google.android.gms.ads.flag` / `tagForChildDirectedTreatment`, `setMaxAdContentRating`, `NSChildrenApp` hints → mention in the questions; **do not** write COPPA claims into the policy without the developer confirming.
+
+## SDK ids
+
+The `sdks` field of `create_app` / `update_app` (store-form answers, `get_store_forms`). Only these
+ids exist; the server refuses any other. Match on the same coordinates as the table above.
+
+| id | Android | iOS | Cross-platform |
+|---|---|---|---|
+| `admob` | `play-services-ads` | `Google-Mobile-Ads-SDK` | `google_mobile_ads`, `react-native-google-mobile-ads` |
+| `applovin-max` | `com.applovin:applovin-sdk` | `AppLovinSDK` | `applovin_max`, `react-native-applovin-max` |
+| `unity-ads` | `com.unity3d.ads:unity-ads` | `UnityAds` | `unity_ads_plugin` |
+| `firebase-analytics` | `firebase-analytics` | `FirebaseAnalytics` | `firebase_analytics`, `@react-native-firebase/analytics` |
+| `mixpanel` | `com.mixpanel.android` | `Mixpanel`, `mixpanel-swift` | `mixpanel_flutter`, `mixpanel-react-native` |
+| `amplitude` | `com.amplitude:analytics-android` | `AmplitudeSwift`, `Amplitude` | `amplitude_flutter`, `@amplitude/analytics-react-native` |
+| `meta-app-events` | `facebook-android-sdk`, `facebook-core` | `FBSDKCoreKit` | `facebook_app_events`, `react-native-fbsdk-next` |
+| `firebase-crashlytics` | `firebase-crashlytics` | `FirebaseCrashlytics` | `firebase_crashlytics`, `@react-native-firebase/crashlytics` |
+| `sentry` | `io.sentry:sentry-android` | `Sentry` | `sentry_flutter`, `@sentry/react-native` |
+| `firebase-auth` | `firebase-auth` | `FirebaseAuth` | `firebase_auth`, `@react-native-firebase/auth` |
+| `google-sign-in` | `play-services-auth`, `googleid` (Credential Manager) | `GoogleSignIn` | `google_sign_in`, `@react-native-google-signin/google-signin` |
+| `meta-login` | `facebook-login` | `FBSDKLoginKit` | `flutter_facebook_auth`, `react-native-fbsdk-next` (Login) |
+| `revenuecat` | `com.revenuecat.purchases` | `RevenueCat` | `purchases_flutter`, `react-native-purchases` |
+| `firebase-messaging` | `firebase-messaging` | `FirebaseMessaging` | `firebase_messaging`, `@react-native-firebase/messaging` |
+| `onesignal` | `com.onesignal:OneSignal` | `OneSignalXCFramework` | `onesignal_flutter`, `react-native-onesignal` |
+
+`react-native-fbsdk-next` covers both Meta entries: add `meta-login` only if the app calls the
+login API. Nothing here is inferred from README prose.

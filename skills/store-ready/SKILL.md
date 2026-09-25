@@ -81,6 +81,10 @@ and permissions with no `dataCollection` bucket (Face ID, camera, notifications�
 permission facts — keep them with file:line for the privacy page's permissions section. README
 prose ("sign in with Google") is a hint for question defaults, never a fact on its own.
 
+In the same pass, list the **SDK ids** the build contains (`references/sdk-map.md` §SDK ids) — they
+feed the store-form answers in step 8. Keep the file:line for each. An SDK in the build with no id
+there is still named to the developer, as "not covered by the store-form answers".
+
 ### 3. Check for an existing app (re-runs)
 
 Call `list_apps`. Match **per selected flavor**, in this order: the application id inside the Play
@@ -101,7 +105,9 @@ numbered list in the same file. Wait for the answers. Nothing has been sent yet.
 
 Send the confirmed values once. One new app → `create_app`. Two or more (a flavor set) →
 **`create_apps`**, up to 10 per call, one entry per flavor with that flavor's own name, facts and
-store URLs (`storeUrlIos`, and `storeUrlsAndroid` — a list, one URL per Android store); split a longer set across calls. Every app is created unpublished, scored and
+store URLs (`storeUrlIos`, and `storeUrlsAndroid` — a list, one URL per Android store) and its
+`sdks`; split a longer set across calls. On a re-run, send `sdks` with `update_app` — it replaces
+the whole list and changes nothing public. Every app is created unpublished, scored and
 limit-checked on its own.
 
 `create_apps` answers with `created`, `failed` and `skipped` — report all three. A failed entry
@@ -236,6 +242,14 @@ Publish."** Then print the paste table:
 If the app was already published and you changed its icon or address in 5b/5c, say so: those
 two are live now, unlike the drafts.
 
+Then call **`get_store_forms`** and print the draft answers for the store questionnaires the app's
+platform needs — Google Play *Data safety* and/or App Store *App Privacy*: one line per data type
+(category → type, collected/shared or linked/tracking, purposes, sources), then every `confirms`
+note, every `mismatches` entry and each `sdkNotes` basis. Say plainly that these are drafts to check,
+built from vendor documentation, and that the developer enters them in the console themselves. A
+mismatch means the privacy policy and the form disagree: offer to fix the facts with `update_app`
+and redraft the privacy page. Give `storeFormsUrl` for the same answers in the dashboard.
+
 Those fields live in the store consoles; you cannot fill them. With several flavors, call
 `request_publish` for each app and print one table **per flavor**, headed by its application id —
 the consoles are per listing, and pasting one flavor's URLs into another's listing is a store
@@ -265,4 +279,6 @@ a terminal cannot. Do not open a browser, do not poll, do not call anything else
 - Replace a custom address the developer already has without their yes, or keep retrying slugs
   past five attempts or after `not_in_plan`. Never respell a brand (`paypa1`) to get past the check.
 - Claim a store will accept the pages, or that `app-ads.txt` is verified with any ad network.
+- Present a store-form answer as verified, or fill a gap the vendor's documentation leaves open
+  from your own knowledge — say it is open.
 - Present the drafts as legal advice.
