@@ -23,6 +23,13 @@ Then, inside your app's repository:
 | `Wire the store-ready links into the app` | after publishing: proposes the in-app privacy/support links as a diff |
 | `Make com.acme.app.pro store-ready` | multi-flavor build: only the named flavors get a site |
 
+**Icon and address:** the agent also finds the app's own launcher/store icon in the repository
+(Play 512 icon, the largest `mipmap` raster, or the iOS `AppIcon` marketing image) and uploads it,
+and on Pro / Advanced claims a custom address built from the app's English name
+(`weather-now.appfoyer.page`). The address passes the same brand and reserved-word checks as the
+dashboard; if one is refused the agent tries the next candidate, at most five, then asks you. It
+never replaces a custom address you already have without asking.
+
 **Multi-flavor builds:** a Gradle product flavor or Xcode target that ships under its own
 application id is its own store listing, so it gets its own site — its own pages, its own
 `/account-deletion` and its own `app-ads.txt`. The agent finds the flavors in the build files,
@@ -34,7 +41,8 @@ skips the question. Build types (`debug`, `staging`) never get a site.
 
 Only **derived facts**: the app name, platform, bundle/application id, the names of SDKs and
 permissions found, and the answers you confirm (company name, support email, jurisdiction, store
-URLs). Never file contents, never source code, never secrets. The API key travels only in the
+URLs). Never source code, never secrets. The only file that leaves is the app's own icon, sent
+once through a single-use upload URL. The API key travels only in the
 `Authorization` header that Claude Code fills from `APPFOYER_API_KEY`; the skill never reads it.
 
 Revoke the key at any time in the dashboard; the next call fails immediately.
@@ -44,6 +52,8 @@ before starting Claude Code, e.g. `export APPFOYER_MCP_URL=https://staging.appfo
 
 ## Guarantees
 
-- Nothing goes public without your click on the review screen.
+- No page goes public without your click on the review screen.
+- The exceptions are the icon and the custom address: they have no draft step, so on an app that
+  is already published they change the live site at once. The agent tells you when it set them.
 - Every page is moderated server-side at publish time, exactly like a manual edit.
 - The pages are templates and drafts, **not legal advice**. You are responsible for what you publish.

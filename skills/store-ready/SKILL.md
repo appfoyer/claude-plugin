@@ -11,7 +11,9 @@ clicks Publish on the review screen. Say this plainly every time you hand off.
 
 Only **derived facts** leave this machine: app name, platform, application/bundle id, SDK and
 permission *names*, and the developer's confirmed answers. Never send file contents, source code,
-secrets, keystores or `.env` values. Never read or print `APPFOYER_API_KEY`.
+secrets, keystores or `.env` values. Never read or print `APPFOYER_API_KEY`. The one file that
+does leave is the app's **own launcher/store icon** (step 5b) — it is a public store asset — and
+only through the upload URL `set_icon` returns.
 
 ## Which mode
 
@@ -20,6 +22,7 @@ secrets, keystores or `.env` values. Never read or print `APPFOYER_API_KEY`.
 | "Make this app store-ready", "I need a privacy policy / deletion URL / app-ads.txt", "…for com.acme.app.pro" | **Draft** (below) |
 | "Is this app store-ready?", "what's missing for the store?" | **Audit**: steps 1–2 (including flavor detection, 1b), then `get_checklist` for each matching existing app — a flavor with no app is itself the finding. No writes. |
 | "Wire the store-ready links into the app", "add the privacy link to settings" | **Wire**: see the last section. Requires published pages. |
+| "Update the app icon", "change the address to weather-radar" | **Icon / address only**: steps 1 and 3 to find the app(s), then 5b or 5c. No facts, no questions, no drafts. A named address is tried as given; changing an existing custom one still needs the developer's yes. |
 
 If a tool call fails with `missing_scope` or an HTTP 401, stop and tell the developer to create or
 re-export an agent key at the connect URL in the error. Do not retry.
@@ -58,6 +61,10 @@ flavor. Build types (`debug`, `staging`, an `applicationIdSuffix` on a non-shipp
   default selection is every flavor with a distinct application id that is not a debug/staging
   variant.
 - **No flavors** → one app, exactly as before. Do not ask the question.
+- **Non-standard layouts** — the app name set in Gradle (`resValue`, `manifestPlaceholders`), a
+  `sourceSets` block that moves a flavor's folders, several `flavorDimensions` (e.g. brand × env,
+  where only the production environment ships): follow `references/sdk-map.md` → "Three non-standard
+  layouts". Apply each only when it is in the Gradle file; a plain build skips all three.
 
 Facts are derived **per flavor**: shared facts (the `main` source set and plain `implementation`
 lines) plus that flavor's own (`<flavor>Implementation` / `<flavor>Api` dependencies,
@@ -94,7 +101,7 @@ numbered list in the same file. Wait for the answers. Nothing has been sent yet.
 
 Send the confirmed values once. One new app → `create_app`. Two or more (a flavor set) →
 **`create_apps`**, up to 10 per call, one entry per flavor with that flavor's own name, facts and
-store URLs; split a longer set across calls. Every app is created unpublished, scored and
+store URLs (`storeUrlIos`, and `storeUrlsAndroid` — a list, one URL per Android store); split a longer set across calls. Every app is created unpublished, scored and
 limit-checked on its own.
 
 `create_apps` answers with `created`, `failed` and `skipped` — report all three. A failed entry
@@ -111,6 +118,73 @@ Outcomes per entry:
 - **`content_rejected`** → print every reason with its `field`, `matched` and `fix`, ask the
   developer what to change, and stop. Never retry with a tweaked name on your own.
 - **`too_many_apps`** → tell the developer to delete an app in the dashboard; stop.
+
+### 5b. `set_icon` — the app's own icon, found in the repository
+
+For each app (flavor) you created, or on a re-run whose `get_app` says `hasIcon: false`. On a re-run
+with an icon already set, replace it only if the developer asked. Find the icon **for that
+platform, that flavor**, first match wins:
+
+**Android** (the manifest's `android:icon`, e.g. `@mipmap/ic_launcher`, names the resource; a
+flavor's `src/<flavor>/…` overrides `src/main/…`)
+1. `src/<flavor|main>/ic_launcher-playstore.png` — Android Studio's 512×512 Play icon.
+2. `fastlane/metadata/android/<locale>/images/icon.png` — the Play listing icon.
+3. The largest raster of that resource: `res/mipmap-xxxhdpi/<name>.png|.webp`, then `xxhdpi`,
+   `xhdpi`. Use the square one, not `<name>_round`. `mipmap-anydpi-v26/*.xml` is an adaptive vector
+   icon and cannot be uploaded — skip it and use the PNG/WebP fallback beside it.
+
+**iOS** (the target's `ASSETCATALOG_COMPILER_APPICON_NAME` in `project.pbxproj` names the set,
+default `AppIcon`; each flavor target can name its own)
+1. `**/*.xcassets/<AppIcon>.appiconset/Contents.json` → the file of the `ios-marketing` 1024×1024
+   entry, or the single `universal` 1024 entry (Xcode 14+), otherwise the largest `size × scale`.
+2. `fastlane/metadata/**/app_icon.png`, if present.
+
+**Cross-platform:** Flutter — `image_path` in `flutter_launcher_icons.yaml` / `pubspec.yaml`, else
+the native paths under `android/` and `ios/`; Expo — `expo.icon` in `app.json`; React Native — the
+native paths. For a `both` app prefer the Play 512 icon, then the iOS marketing icon.
+
+Before uploading check it with `file` / `sips -g pixelWidth -g pixelHeight` (or `identify`): PNG,
+JPEG or WebP, square, at most `maxBytes` (512 KB). If it is larger — a 1024 iOS icon often is —
+**copy it to a temp directory** and downscale the copy (`sips -Z 512 <in> --out "$TMPDIR/appfoyer-icon.png"`,
+or `magick <in> -resize 512x512 <out>`); never write into the repository. No usable raster at all
+(only vectors, or not square) → say so, give the dashboard's Settings as the place to upload, and go on.
+
+Then call `set_icon`, replace `<path-to-icon>` in the returned `curl` and run it. `{"ok":true}` is
+done; on `413` downscale and call `set_icon` again; on `404 invalid_token` call `set_icon` again
+(the URL is single use and lasts ten minutes); on `415` it is not a real PNG/JPEG/WebP. Tell the
+developer which file you uploaded. The icon goes live at once — it has no draft step.
+
+### 5c. `set_slug` — a custom address on Pro / Advanced
+
+Only when the app still has its random `app-…` address (`slug` equals `baseSlug`). If it already
+has a custom one, leave it unless the developer asks to change it — and then only with their yes
+and `replaceCustom: true`, because the old address is released at once and any store listing or
+build that names it breaks.
+
+Build candidates from the app's **English name**, per flavor: `res/values/strings.xml` `app_name`
+(or `values-en/` when the default locale is not English), `CFBundleDisplayName` in
+`en.lproj/InfoPlist.strings`, then `Info.plist`, then `fastlane/metadata/android/en-US/title.txt` /
+`fastlane/metadata/en-US/name.txt`. No English name → transliterate the name to ASCII
+(`Izahlı Lüğət` → `izahli-luget`). Lowercase, words joined by single hyphens, 4–32 characters,
+`a-z 0-9 -` only. Drop words the server refuses so you do not waste an attempt on them: brand and
+store names (`google`, `apple`, `play`, `facebook`, `whatsapp`, bank or payment names…), structural
+words (`login`, `verify`, `support`, `secure`, `official`, `account`), the `app-` prefix, and
+fillers like `the`. A flavor's candidate carries its flavor word (`weather-now-pro`).
+
+Candidate order: the full name (`weather-now`), then without fillers, then `+ -app`, then the
+developer's short name + the app name (`acme-weather`), then `+ -android` / `-ios` for a
+platform-specific app. For each, `check_slug` first (it writes nothing), then `set_slug` with the
+first available one:
+
+- `not_in_plan` → Free account: **skip the step without retrying**, one line to the developer
+  that a custom address comes with Pro.
+- `retry: true` (`taken`, `brand`, `structural`, `reserved`, `invalid`) → read `fix`, move to the
+  next candidate, **at most 5 attempts per app in total**. After the fifth, list what you tried with
+  each reason and ask the developer for an address.
+- `replaces_custom_slug` → ask the developer; never add `replaceCustom` on your own.
+
+Report the new `url`. The permanent `app-…` address keeps redirecting to it. Use the new URL in the
+paste table of step 8.
 
 ### 6. Draft the five pages with `set_page`
 
@@ -159,6 +233,9 @@ Publish."** Then print the paste table:
 | App Store Connect → App Privacy → Privacy Policy URL | `<site>/privacy` |
 | App Store Connect → App Information → Support URL | `<site>/support` |
 
+If the app was already published and you changed its icon or address in 5b/5c, say so: those
+two are live now, unlike the drafts.
+
 Those fields live in the store consoles; you cannot fill them. With several flavors, call
 `request_publish` for each app and print one table **per flavor**, headed by its application id —
 the consoles are per listing, and pasting one flavor's URLs into another's listing is a store
@@ -183,6 +260,9 @@ a terminal cannot. Do not open a browser, do not poll, do not call anything else
 - Publish, or ask the developer for the key so you can "do it manually".
 - Create an app for a build type (`debug`, `staging`) or for a flavor the developer did not select.
 - Share one flavor's facts, pages or store links with another flavor.
-- Send file contents or source, run builds, or modify the repository in Draft/Audit mode.
+- Send file contents or source, run builds, or modify the repository in Draft/Audit mode. The
+  app's own icon through `set_icon` is the only file that leaves; a resized copy goes to a temp dir.
+- Replace a custom address the developer already has without their yes, or keep retrying slugs
+  past five attempts or after `not_in_plan`. Never respell a brand (`paypa1`) to get past the check.
 - Claim a store will accept the pages, or that `app-ads.txt` is verified with any ad network.
 - Present the drafts as legal advice.

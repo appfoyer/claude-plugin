@@ -28,6 +28,16 @@ This build ships 3 flavors:
 - staging     com.acme.weather.debug       build type, not a store listing — excluded
 ```
 
+With several `flavorDimensions`, list **combinations**, not flavors, and name the excluded ones
+with the reason:
+
+```
+This build has 2 dimensions (brand × env), 4 shipped combinations:
+- brandAProd  com.acme.a       app/build.gradle.kts:41,58 · src/brandA/res/values/strings.xml
+- brandBProd  com.acme.b       app/build.gradle.kts:46,58
+- brandADev / brandBDev        env "dev" — not a store listing, excluded
+```
+
 | # | Question | Options |
 |---|---|---|
 | 0 | Which flavors should get their own store-ready site? (`multiSelect: true`) | one option per shipped flavor, labelled `<flavor> — <applicationId>`, all pre-selected · "Other" → the developer names a subset or a flavor you missed |
