@@ -53,7 +53,11 @@ before starting Claude Code, e.g. `export APPFOYER_MCP_URL=https://staging.appfo
 ## Guarantees
 
 - No page goes public without your click on the review screen.
-- The exceptions are the icon and the custom address: they have no draft step, so on an app that
-  is already published they change the live site at once. The agent tells you when it set them.
+- The exceptions have no draft step, so on an app that is already published they change the live
+  site at once — the agent tells you when it touched them:
+  - the icon and the custom address;
+  - `app-ads.txt` (sent only with publisher lines you confirmed);
+  - settings the pages quote: app name, developer name, support email and store links.
+- The agent cannot publish or unpublish anything, and cannot turn the account-deletion page off.
 - Every page is moderated server-side at publish time, exactly like a manual edit.
 - The pages are templates and drafts, **not legal advice**. You are responsible for what you publish.

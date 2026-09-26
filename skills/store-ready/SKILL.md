@@ -25,7 +25,16 @@ only through the upload URL `set_icon` returns.
 | "Update the app icon", "change the address to weather-radar" | **Icon / address only**: steps 1 and 3 to find the app(s), then 5b or 5c. No facts, no questions, no drafts. A named address is tried as given; changing an existing custom one still needs the developer's yes. |
 
 If a tool call fails with `missing_scope` or an HTTP 401, stop and tell the developer to create or
-re-export an agent key at the connect URL in the error. Do not retry.
+re-export an agent key at the connect URL in the error. Do not retry. Also stop, without retrying, on:
+
+- `terms_required` (HTTP 403) — the developer must sign in to the dashboard and accept the current
+  Terms of Service; then run again.
+- `app_locked` — the developer made the app read-only; they unlock it in Settings.
+- `app_frozen` — the subscription lapsed; only renewing the plan clears it. Never tell them to "unlock" it.
+- `-32029` / HTTP 429 — the write budget is spent. Wait the `retryAfter` seconds once, then continue;
+  if it happens again, stop and say how far you got.
+
+Send one JSON-RPC message per request; batches are refused.
 
 A JSON-RPC **validation error** (`-32602`, e.g. "Too big … <=102400" on `markdown`) means nothing
 was written. Treat it like a `too_large` result: shorten the draft and re-send once.
@@ -233,7 +242,8 @@ If a reason remains, leave it — the developer will see it on the review screen
 
 ### 7. `set_ad_lines` — only with an ads fact and publisher lines
 
-If the developer gave publisher lines, send them as-is. If they said "later", skip and say where
+`app-ads.txt` has **no draft step**: on a published app the file is live the moment you send it.
+Send only lines the developer confirmed, and say it is live. If the developer gave publisher lines, send them as-is. If they said "later", skip and say where
 to add them (Dashboard → app-ads.txt). Remind them to set the site as the developer website in the
 store listing — AdMob crawls the hostname of that URL.
 
