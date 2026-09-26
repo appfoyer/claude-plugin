@@ -1,0 +1,25 @@
+name: habit_loop
+description: Daily habit tracker.
+publish_to: none
+version: 1.4.0+14
+
+environment:
+  sdk: ">=3.4.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  firebase_core: ^3.6.0
+  firebase_auth: ^5.3.1
+  sign_in_with_apple: ^6.1.2
+  google_mobile_ads: ^5.2.0
+  purchases_flutter: ^8.1.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_launcher_icons: ^0.14.1
+  sentry_flutter: ^8.9.0
+
+flutter:
+  uses-material-design: true

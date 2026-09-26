@@ -1,0 +1,12 @@
+[versions]
+gitlive = "2.1.0"
+sentry-kmp = "0.10.0"
+
+[libraries]
+gitlive-firebase-auth = { module = "dev.gitlive:firebase-auth", version.ref = "gitlive" }
+sentry-kmp = { module = "io.sentry:sentry-kotlin-multiplatform", version.ref = "sentry-kmp" }
+play-services-location = { module = "com.google.android.gms:play-services-location", version = "21.3.0" }
+
+[plugins]
+androidApplication = { id = "com.android.application", version = "8.7.2" }
+kotlinMultiplatform = { id = "org.jetbrains.kotlin.multiplatform", version = "2.1.0" }

@@ -4,7 +4,7 @@ Facts feed `dataCollection` (`account`, `analytics`, `ads`, `crash`, `location`,
 Match on dependency coordinates, pod names, SwiftPM products and manifest/plist keys. Report the
 **file and line** each fact came from. When nothing matches, the fact list is `["none"]` — say so.
 
-| Fact | Android (`build.gradle(.kts)`, `libs.versions.toml`, manifest) | iOS (`Podfile`, `Package.swift`, `*.pbxproj`, `Info.plist`) | Cross-platform (`pubspec.yaml`, `package.json`, `app.json`) |
+| Fact | Android (`build.gradle(.kts)`, `libs.versions.toml`, manifest) | iOS (`Podfile`, `Package.swift`, `*.pbxproj`, `Info.plist`) | Cross-platform (`pubspec.yaml`, `package.json`, `app.json` / `app.config.*`) |
 |---|---|---|---|
 | `ads` | `play-services-ads`, `com.google.android.gms:play-services-ads*`, `com.google.android.gms.ads.APPLICATION_ID` meta-data, `applovin`, `unity-ads`, `ironsource`, `inmobi`, `vungle`, `chartboost`, `AD_ID` permission | `Google-Mobile-Ads-SDK`, `AppLovinSDK`, `UnityAds`, `IronSourceSDK`, `NSUserTrackingUsageDescription`, `SKAdNetworkItems` | `google_mobile_ads`, `react-native-google-mobile-ads`, `expo-ads-admob`, `applovin_max` |
 | `analytics` | `firebase-analytics`, `com.google.firebase:firebase-analytics*`, `mixpanel`, `amplitude`, `segment`, `com.facebook.android:facebook-android-sdk` (App Events), `appsflyer`, `adjust` | `FirebaseAnalytics`, `Mixpanel`, `Amplitude`, `Segment`, `FBSDKCoreKit`, `AppsFlyerFramework`, `Adjust` | `firebase_analytics`, `@react-native-firebase/analytics`, `mixpanel_flutter`, `amplitude_flutter`, `expo-firebase-analytics` |
@@ -13,11 +13,19 @@ Match on dependency coordinates, pod names, SwiftPM products and manifest/plist 
 | `purchases` | `com.android.billingclient:billing`, `revenuecat`/`purchases`, `qonversion`, `adapty` | `StoreKit` usage, `RevenueCat`/`Purchases` pod, `Qonversion`, `Adapty`, `SKPaymentQueue` in source *names* only | `in_app_purchase`, `purchases_flutter`, `react-native-iap`, `react-native-purchases`, `expo-in-app-purchases` |
 | `account` | `firebase-auth`, `play-services-auth`, `credentials`, `auth0`, `supabase` auth, `amplify-auth`, `com.facebook.android:facebook-login` | `FirebaseAuth`, `GoogleSignIn`, `AuthenticationServices` / `com.apple.developer.applesignin` entitlement (Sign in with Apple), `Auth0`, `FBSDKLoginKit` | `firebase_auth`, `google_sign_in`, `sign_in_with_apple`, `@react-native-firebase/auth`, `expo-auth-session`, `supabase_flutter` |
 
+**Kotlin Multiplatform** libraries are Gradle coordinates in `commonMain` / `androidMain` / `iosMain`
+dependencies (`frameworks.md` says which platform each source set is): `dev.gitlive:firebase-auth` →
+`account`, `dev.gitlive:firebase-analytics` → `analytics`, `dev.gitlive:firebase-crashlytics` →
+`crash`, `io.sentry:sentry-kotlin-multiplatform` → `crash`, `com.revenuecat.purchases:purchases-kmp*`
+→ `purchases`, `io.github.jan-tennert.supabase:auth-kt` → `account`, `io.github.mirzemehdi:kmpauth-*`
+→ `account`, `dev.icerock.moko:geo` → `location`. iOS pods declared in the Gradle `cocoapods { pod(…) }`
+block map like the iOS column.
+
 Also derive (not a `dataCollection` key, but used in the pages and the questions):
 
-- **Platform**: Android files present → `android`; iOS files present → `ios`; both → `both`.
-- **App name**: `res/values/strings.xml` `app_name`; `CFBundleDisplayName` / `CFBundleName`; `pubspec.yaml` `name`; `app.json` `expo.name`.
-- **Application id / bundle id**: `applicationId` in the app module's Gradle file; `PRODUCT_BUNDLE_IDENTIFIER` in `project.pbxproj`; `android.package` / `ios.bundleIdentifier` in `app.json`.
+- **Platform**: Android app module present → `android`; iOS app target present → `ios`; both → `both`. For Expo (no native folders) and other cross-platform projects, `frameworks.md` decides.
+- **App name**: `res/values/strings.xml` `app_name`; `CFBundleDisplayName` / `CFBundleName`; `app.json` `expo.name`. `pubspec.yaml` `name` and a bare React Native `app.json` `name` are package/module names, not the store name — see `frameworks.md`.
+- **Application id / bundle id**: `applicationId` in the Gradle module that applies `com.android.application` (not `namespace`); `PRODUCT_BUNDLE_IDENTIFIER` of the application target in `project.pbxproj`; `expo.android.package` / `expo.ios.bundleIdentifier` in `app.json`. Flutter, React Native, Expo and Kotlin Multiplatform put these in different folders: `frameworks.md`.
 - **Android store URL proposal**: `https://play.google.com/store/apps/details?id=<applicationId>` — *propose*, do not assert; the app may not be listed yet. Android listings are a **list** (`storeUrlsAndroid`, one per store): if the repo shows other stores (Huawei `agconnect-services.json`, RuStore / Galaxy Store links in the README or metadata), ask for those listing URLs too — never build a non-Play URL from the application id, their paths differ per store.
 - **iOS store URL**: needs the numeric App Store id — look in fastlane `Appfile`/`Deliverfile` (`apple_app_id`); otherwise ask. The `apple_id(...)` login in `Appfile` is **never** proposed as the support email.
 - **AdMob publisher id**: `ca-app-pub-<16 digits>~…` in the manifest / plist gives `pub-<16 digits>`; offer `google.com, pub-<id>, DIRECT, f08c47fec0942fa0` as the first option of question 7, still to be confirmed by the developer.
@@ -82,17 +90,17 @@ ids exist; the server refuses any other. Match on the same coordinates as the ta
 | `admob` | `play-services-ads` | `Google-Mobile-Ads-SDK` | `google_mobile_ads`, `react-native-google-mobile-ads` |
 | `applovin-max` | `com.applovin:applovin-sdk` | `AppLovinSDK` | `applovin_max`, `react-native-applovin-max` |
 | `unity-ads` | `com.unity3d.ads:unity-ads` | `UnityAds` | `unity_ads_plugin` |
-| `firebase-analytics` | `firebase-analytics` | `FirebaseAnalytics` | `firebase_analytics`, `@react-native-firebase/analytics` |
+| `firebase-analytics` | `firebase-analytics`, KMP `dev.gitlive:firebase-analytics` | `FirebaseAnalytics` | `firebase_analytics`, `@react-native-firebase/analytics` |
 | `mixpanel` | `com.mixpanel.android` | `Mixpanel`, `mixpanel-swift` | `mixpanel_flutter`, `mixpanel-react-native` |
 | `amplitude` | `com.amplitude:analytics-android` | `AmplitudeSwift`, `Amplitude` | `amplitude_flutter`, `@amplitude/analytics-react-native` |
 | `meta-app-events` | `facebook-android-sdk`, `facebook-core` | `FBSDKCoreKit` | `facebook_app_events`, `react-native-fbsdk-next` |
-| `firebase-crashlytics` | `firebase-crashlytics` | `FirebaseCrashlytics` | `firebase_crashlytics`, `@react-native-firebase/crashlytics` |
-| `sentry` | `io.sentry:sentry-android` | `Sentry` | `sentry_flutter`, `@sentry/react-native` |
-| `firebase-auth` | `firebase-auth` | `FirebaseAuth` | `firebase_auth`, `@react-native-firebase/auth` |
+| `firebase-crashlytics` | `firebase-crashlytics`, KMP `dev.gitlive:firebase-crashlytics` | `FirebaseCrashlytics` | `firebase_crashlytics`, `@react-native-firebase/crashlytics` |
+| `sentry` | `io.sentry:sentry-android`, KMP `io.sentry:sentry-kotlin-multiplatform` | `Sentry` | `sentry_flutter`, `@sentry/react-native` |
+| `firebase-auth` | `firebase-auth`, KMP `dev.gitlive:firebase-auth` | `FirebaseAuth` | `firebase_auth`, `@react-native-firebase/auth` |
 | `google-sign-in` | `play-services-auth`, `googleid` (Credential Manager) | `GoogleSignIn` | `google_sign_in`, `@react-native-google-signin/google-signin` |
 | `meta-login` | `facebook-login` | `FBSDKLoginKit` | `flutter_facebook_auth`, `react-native-fbsdk-next` (Login) |
-| `revenuecat` | `com.revenuecat.purchases` | `RevenueCat` | `purchases_flutter`, `react-native-purchases` |
-| `firebase-messaging` | `firebase-messaging` | `FirebaseMessaging` | `firebase_messaging`, `@react-native-firebase/messaging` |
+| `revenuecat` | `com.revenuecat.purchases` (incl. KMP `purchases-kmp*`) | `RevenueCat` | `purchases_flutter`, `react-native-purchases` |
+| `firebase-messaging` | `firebase-messaging`, KMP `dev.gitlive:firebase-messaging` | `FirebaseMessaging` | `firebase_messaging`, `@react-native-firebase/messaging` |
 | `onesignal` | `com.onesignal:OneSignal` | `OneSignalXCFramework` | `onesignal_flutter`, `react-native-onesignal` |
 
 `react-native-fbsdk-next` covers both Meta entries: add `meta-login` only if the app calls the

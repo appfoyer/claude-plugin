@@ -1,0 +1,37 @@
+// !$*UTF8*$!
+// Trimmed to the settings the skill reads.
+{
+	archiveVersion = 1;
+	objectVersion = 54;
+	objects = {
+		97C146ED1CF9000F007C117D /* Runner */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 97C147051CF9000F007C117D;
+			name = Runner;
+			productType = "com.apple.product-type.application";
+		};
+		331C8080294A63A400263BE5 /* RunnerTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 331C8087294A63A400263BE5;
+			name = RunnerTests;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		97C147071CF9000F007C117D /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 7AFA3C8E1D35360C0083082E /* Release.xcconfig */;
+			buildSettings = {
+				INFOPLIST_FILE = Runner/Info.plist;
+				PRODUCT_BUNDLE_IDENTIFIER = com.example.habitLoop;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Release;
+		};
+		331C8089294A63A400263BE5 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				PRODUCT_BUNDLE_IDENTIFIER = com.example.habitLoop.RunnerTests;
+			};
+			name = Release;
+		};
+	};
+}

@@ -1,0 +1,7 @@
+{
+  "build": {
+    "development": { "developmentClient": true, "env": { "APP_VARIANT": "development" } },
+    "preview": { "distribution": "internal", "env": { "APP_VARIANT": "development" } },
+    "production": {}
+  }
+}

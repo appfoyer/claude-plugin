@@ -37,13 +37,22 @@ was written. Treat it like a `too_large` result: shorten the draft and re-send o
 Read only build, manifest and store-metadata files: `build.gradle(.kts)`, `settings.gradle`,
 `gradle/libs.versions.toml`, `AndroidManifest.xml`, `res/values/strings.xml`, `Podfile`, `Podfile.lock`,
 `Package.swift`, `*.xcodeproj/project.pbxproj`, `Info.plist` and other `*.plist` config files,
-`*.entitlements`, `PrivacyInfo.xcprivacy`, `*.storekit`, `pubspec.yaml`, `package.json`, `app.json`, fastlane `Appfile`/`Deliverfile`
+`*.entitlements`, `PrivacyInfo.xcprivacy`, `*.storekit`, `*.xcconfig`, `pubspec.yaml`, `flavorizr.yaml`,
+`flutter_launcher_icons.yaml`, `package.json`, `app.json`, `app.config.js|ts` (literal values only, never run it),
+`eas.json`, fastlane `Appfile`/`Deliverfile`
 and `fastlane/metadata/**`, store listing texts (`appstore/`, `playstore/`, `metadata/`), `LICENSE`,
 `README*`. Do not open source files, `.env*`, keystores or CI secrets.
 
+**Identify the framework first** — native, Flutter, React Native (bare or Expo) or Kotlin
+Multiplatform — because each keeps the package id, bundle id and app name in different files
+(`android/app/…`, `ios/Runner.xcodeproj`, `app.json` / `app.config.*`, `composeApp/`, `iosApp/Configuration/*.xcconfig`).
+The table and the per-framework rules are in `references/frameworks.md`; for a cross-platform app
+derive the Android package id **and** the iOS bundle id separately, each with its file:line — they
+often differ.
+
 Derive: platform, app name, application/bundle id, proposed Android store URL, **and the build's
-product flavors** (Gradle `productFlavors`, Xcode targets/schemes with their own bundle id). Details:
-`references/sdk-map.md`.
+product flavors** (Gradle `productFlavors`, Xcode targets/schemes with their own bundle id, Flutter
+flavors, Expo/EAS variants). Details: `references/sdk-map.md`.
 
 ### 1b. Flavors — one shipped flavor is one app
 
@@ -147,7 +156,8 @@ default `AppIcon`; each flavor target can name its own)
 
 **Cross-platform:** Flutter — `image_path` in `flutter_launcher_icons.yaml` / `pubspec.yaml`, else
 the native paths under `android/` and `ios/`; Expo — `expo.icon` in `app.json`; React Native — the
-native paths. For a `both` app prefer the Play 512 icon, then the iOS marketing icon.
+native paths; Kotlin Multiplatform — the Android app module's `src/main/res` (or `src/androidMain/res`)
+and the `.xcassets` in the iOS app folder. For a `both` app prefer the Play 512 icon, then the iOS marketing icon.
 
 Before uploading check it with `file` / `sips -g pixelWidth -g pixelHeight` (or `identify`): PNG,
 JPEG or WebP, square, at most `maxBytes` (512 KB). If it is larger — a 1024 iOS icon often is —
