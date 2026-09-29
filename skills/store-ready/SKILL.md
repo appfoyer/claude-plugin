@@ -128,6 +128,12 @@ store URLs (`storeUrlIos`, and `storeUrlsAndroid` — a list, one URL per Androi
 the whole list and changes nothing public. Every app is created unpublished, scored and
 limit-checked on its own.
 
+Also send **`description`**: one or two plain sentences (one line, ≤ 300 characters) on what the
+app does, taken from the repo — README, store metadata (`fastlane/metadata`, `Info.plist`
+display strings), the app's own strings. Never invent features; if the repo says nothing, leave it
+out. It appears only on the developer's dashboard Overview, never on the public site. Per flavor,
+say what sets that flavor apart. On a re-run, fix it with `update_app` (`null` clears it).
+
 `create_apps` answers with `created`, `failed` and `skipped` — report all three. A failed entry
 never discards the others: keep drafting for what was created, show every reason for what was not.
 If the result carries `publishLimit`, the plan has fewer free slots than the flavors you just
@@ -208,7 +214,7 @@ first available one:
   each reason and ask the developer for an address.
 - `replaces_custom_slug` → ask the developer; never add `replaceCustom` on your own.
 
-Report the new `url`. The permanent `app-…` address keeps redirecting to it. Use the new URL in the
+Report the new `url`. The permanent `app-…` address keeps serving the same site. Use the new URL in the
 paste table of step 8.
 
 ### 6. Draft the five pages with `set_page`
