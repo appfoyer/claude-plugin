@@ -42,6 +42,10 @@ was written. Treat it like a `too_large` result: shorten the draft and re-send o
 
 ## Draft mode
 
+**Every run starts from the files on disk.** Even in a conversation where you already read this
+repository, read the build files again and run the scanner cross-check (step 2) again: a branch was
+switched or a dependency added in between, and facts from earlier in the conversation are stale.
+
 ### 1. Detect platform and identity — from files, never by asking
 
 Read only build, manifest and store-metadata files: `build.gradle(.kts)`, `settings.gradle`,
@@ -265,7 +269,8 @@ store listing — AdMob crawls the hostname of that URL.
 
 ### 7b. `appfoyer.json` — record what these pages were written from
 
-For **every app created or updated in this run**, from the repository root:
+For **every app this run covered** — created, updated, or matched on a re-run where nothing
+changed (`record` is idempotent; a skipped call leaves a stale file) — from the repository root:
 
 ```
 node <plugin-root>/bin/appfoyer-check.mjs record --app-id <appId> --name "<app name>" [--root <app folder>] [--source-sets <sets>]
