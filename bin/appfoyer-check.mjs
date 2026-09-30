@@ -21704,7 +21704,7 @@ function diffBuild(baseline, now) {
 var KIND = { fact: "data collected", sdk: "SDK", otherSdk: "SDK, not in the store-form catalogue", permission: "permission" };
 var where2 = (e) => e.map((x) => `${x.file}:${x.line}`).join(", ");
 var title = (a) => [a.name ? `"${a.name}"` : null, a.appId ? `app ${a.appId}` : null, a.root !== "." ? `in ${a.root}/` : null].filter(Boolean).join(" \xB7 ") || "App";
-var FIX_HINT = 'To fix: run "make this app store-ready" with the AppFoyer plugin, or update the app in the AppFoyer dashboard (Settings, Store forms, the privacy page). Then run `appfoyer-check update` and commit appfoyer.json.';
+var FIX_HINT = 'To fix: run "make this app store-ready" with the AppFoyer plugin \u2014 it updates the pages and rewrites appfoyer.json. Fixed the pages in the AppFoyer dashboard instead? Refresh appfoyer.json (`npx @appfoyer/check update`, or the refreshed file in the CI job summary) and commit it.';
 var SCOPE_NOTE = "This check reads build files only, sends nothing anywhere and changes nothing. A dependency in a build file is not proof the app uses it; each line says what may be outdated, not what is wrong.";
 function formatText(results, baselineFile, checkedAt) {
   const lines = [`AppFoyer drift check \u2014 ${baselineFile} (last updated ${checkedAt})`, ""];
