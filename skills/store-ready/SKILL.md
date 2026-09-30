@@ -104,6 +104,15 @@ In the same pass, list the **SDK ids** the build contains (`references/sdk-map.m
 feed the store-form answers in step 8. Keep the file:line for each. An SDK in the build with no id
 there is still named to the developer, as "not covered by the store-form answers".
 
+**Cross-check with the scanner.** This plugin ships the same build-file scanner the CI check runs:
+`bin/appfoyer-check.mjs`, two folders above this skill's base directory (`<plugin-root>`). From the
+repository root run `node <plugin-root>/bin/appfoyer-check.mjs detect <app folder> --format json`
+(add `--source-sets <flavor>` per flavor, as in 7b). It reads build files only and sends nothing.
+Every fact, SDK and permission it reports must be in your list: for each one you do not have, open
+that file:line and either add it or tell the developer why it does not apply. Items only you found
+stay — the scanner is narrower than your reading. `node` missing or older than 20, or the command
+fails → go on without it and say so in one line.
+
 ### 3. Check for an existing app (re-runs)
 
 Call `list_apps`. Match **per selected flavor**, in this order: the application id inside the Play
@@ -254,6 +263,26 @@ Send only lines the developer confirmed, and say it is live. If the developer ga
 to add them (Dashboard → app-ads.txt). Remind them to set the site as the developer website in the
 store listing — AdMob crawls the hostname of that URL.
 
+### 7b. `appfoyer.json` — record what these pages were written from
+
+For **every app created or updated in this run**, from the repository root:
+
+```
+node <plugin-root>/bin/appfoyer-check.mjs record --app-id <appId> --name "<app name>" [--root <app folder>] [--source-sets <sets>]
+```
+
+- `--root` only when the app is not at the repository root (a monorepo's `mobile`).
+- `--source-sets` for a flavor (1b): the flavor's name, or for a multi-dimension combination every
+  flavor in it plus the combination (`brandA,prod,brandAProd`). None for a single-flavor app.
+- It creates or refreshes `appfoyer.json` at the repository root: one entry per app, matched by app
+  id, other entries untouched. The free CI check (CI check mode) compares every later pull request
+  with it. Nothing leaves the machine.
+- **Never write or edit `appfoyer.json` yourself.** The CI check runs this same scanner; a file in
+  your own words would show up there as drift.
+- `node` unavailable or the command fails → skip it and say so in one line (the CI check proposes the
+  file on its first run instead). Do not retry.
+- Never commit it. The hand-off says it is there.
+
 ### 8. `request_publish` and stop
 
 Print the `reviewUrl` and, verbatim: **"Nothing is public yet. Review each page and click
@@ -268,6 +297,9 @@ Publish."** Then print the paste table:
 
 If the app was already published and you changed its icon or address in 5b/5c, say so: those
 two are live now, unlike the drafts.
+
+If 7b wrote `appfoyer.json`, say: **"`appfoyer.json` records what these pages were written from —
+commit it with the rest."**
 
 Then call **`get_store_forms`** and print the draft answers for the store questionnaires the app's
 platform needs — Google Play *Data safety* and/or App Store *App Privacy*: one line per data type
@@ -329,13 +361,11 @@ AppFoyer server and never changes a page.
              path: .
    ```
 
-5. On a yes, write it. **Never commit, never push**, never write `appfoyer.json` yourself: the first
-   pull-request run shows in its job summary the `appfoyer.json` the check reads from the build, and
-   the developer commits that after comparing it with the published pages. A file written by you
-   would be your reading of the build, not the check's, and the next run would report the difference.
-6. **Flavors.** The proposed baseline treats the folder as one app. With several flavors (1b), say
-   that each listing can get its own entry — the same fields plus `"name"` and
-   `"sourceSets": ["<flavor>"]` — so a free flavor's ad SDK is not compared with the paid flavor.
+5. On a yes, write it. **Never commit, never push.**
+6. **Baseline.** No `appfoyer.json` at the repository root → find the apps with `list_apps` (match
+   as in step 3, one per flavor) and run 7b's `record` for each. That is a local file written by the
+   scanner, not a page change; say so. An app with no AppFoyer app yet → tell the developer to make
+   it store-ready first; the check has nothing to compare with.
 7. Say plainly: by default the job reports and passes; `fail-on-drift: "true"` under `with:` makes
    it fail. It flags what **may** be outdated; it does not decide whether the app is compliant.
 
@@ -346,8 +376,9 @@ AppFoyer server and never changes a page.
 - Share one flavor's facts, pages or store links with another flavor.
 - Send file contents or source, run builds, or modify the repository in Draft/Audit mode. The
   app's own icon through `set_icon` is the only file that leaves; a resized copy goes to a temp dir.
-  The only repository writes are Wire mode's diff and CI check mode's workflow file, each on an
-  explicit yes.
+  The only repository writes are `appfoyer.json` through the bundled scanner (7b), and Wire mode's
+  diff and CI check mode's workflow file, each of those two on an explicit yes. Never write
+  `appfoyer.json` by hand.
 - Replace a custom address the developer already has without their yes, or keep retrying slugs
   past five attempts or after `not_in_plan`. Never respell a brand (`paypa1`) to get past the check.
 - Claim a store will accept the pages, or that `app-ads.txt` is verified with any ad network.

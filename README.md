@@ -46,6 +46,12 @@ URLs). Never source code, never secrets. The only file that leaves is the app's 
 once through a single-use upload URL. The API key travels only in the
 `Authorization` header that Claude Code fills from `APPFOYER_API_KEY`; the skill never reads it.
 
+**One file in your repository:** `appfoyer.json`, a record of the SDKs, data types and permissions
+the pages were written from. The plugin's bundled scanner (`bin/appfoyer-check.mjs`, build files only)
+writes it at the end of each run; nothing in it is sent anywhere. Commit it, and the free GitHub
+Action [`appfoyer/check-action`](https://github.com/appfoyer/check-action) flags every later pull
+request that adds something the pages may not cover. The agent never commits or pushes.
+
 Revoke the key at any time in the dashboard; the next call fails immediately.
 
 Staging or self-hosted endpoint: set `APPFOYER_MCP_URL` (default `https://app.appfoyer.com/mcp`)
