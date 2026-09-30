@@ -22,6 +22,7 @@ only through the upload URL `set_icon` returns.
 | "Make this app store-ready", "I need a privacy policy / deletion URL / app-ads.txt", "…for com.acme.app.pro" | **Draft** (below) |
 | "Is this app store-ready?", "what's missing for the store?" | **Audit**: steps 1–2 (including flavor detection, 1b), then `get_checklist` for each matching existing app — a flavor with no app is itself the finding. No writes. |
 | "Wire the store-ready links into the app", "add the privacy link to settings" | **Wire**: see the last section. Requires published pages. |
+| "Add the AppFoyer drift check", "check my privacy policy in CI" | **CI check**: see the section after Wire mode. Writes one workflow file, on a yes. |
 | "Update the app icon", "change the address to weather-radar" | **Icon / address only**: steps 1 and 3 to find the app(s), then 5b or 5c. No facts, no questions, no drafts. A named address is tried as given; changing an existing custom one still needs the developer's yes. |
 
 If a tool call fails with `missing_scope` or an HTTP 401, stop and tell the developer to create or
@@ -287,6 +288,10 @@ page per message, and repeat the review URL at the end. Publishing itself always
 review screen — it shows the rendered page next to the live one with the moderation result, which
 a terminal cannot. Do not open a browser, do not poll, do not call anything else.
 
+Close with one line, and do nothing about it unless asked: **"When a later pull request adds an SDK
+or a permission, these pages can fall out of date. Say "add the AppFoyer drift check" and I'll add a
+GitHub workflow that flags it."**
+
 ## Wire mode (after publishing)
 
 1. `list_apps` → `get_app`. If the pages you need are not `published`, stop and point at the review URL.
@@ -295,6 +300,45 @@ a terminal cannot. Do not open a browser, do not poll, do not call anything else
    hard-coded policy URL, the store metadata files under `fastlane/metadata`.
 3. Propose a diff. Apply it **only on an explicit yes**. Never commit, never push.
 
+## CI check mode
+
+Adds the free GitHub Action `appfoyer/check-action`, which compares every pull request's build files
+with a committed `appfoyer.json` and lists, in the job summary, each SDK, data type and permission
+added since the pages were written. It reads build files only, needs no key or secret, calls no
+AppFoyer server and never changes a page.
+
+1. **GitHub only.** Look for `.git` with a `github.com` remote (`git remote -v`; read-only). No
+   GitHub → say the check is a GitHub Action today and stop.
+2. **Folder.** The folder that holds the app's build files, relative to the repository root: `.`
+   for a single-app repo, the app's folder in a monorepo (`mobile`). This becomes `path:`.
+3. **Existing file.** If `.github/workflows/appfoyer.yml` exists, show it and stop — never overwrite.
+4. **Propose** exactly this file (fill `path` when it is not `.`) and ask for an explicit yes:
+
+   ```yaml
+   name: AppFoyer drift check
+   on: pull_request
+   permissions:
+     contents: read
+   jobs:
+     check:
+       runs-on: ubuntu-latest
+       steps:
+         - uses: actions/checkout@v5
+         - uses: appfoyer/check-action@v1
+           with:
+             path: .
+   ```
+
+5. On a yes, write it. **Never commit, never push**, never write `appfoyer.json` yourself: the first
+   pull-request run shows in its job summary the `appfoyer.json` the check reads from the build, and
+   the developer commits that after comparing it with the published pages. A file written by you
+   would be your reading of the build, not the check's, and the next run would report the difference.
+6. **Flavors.** The proposed baseline treats the folder as one app. With several flavors (1b), say
+   that each listing can get its own entry — the same fields plus `"name"` and
+   `"sourceSets": ["<flavor>"]` — so a free flavor's ad SDK is not compared with the paid flavor.
+7. Say plainly: by default the job reports and passes; `fail-on-drift: "true"` under `with:` makes
+   it fail. It flags what **may** be outdated; it does not decide whether the app is compliant.
+
 ## Never
 
 - Publish, or ask the developer for the key so you can "do it manually".
@@ -302,6 +346,8 @@ a terminal cannot. Do not open a browser, do not poll, do not call anything else
 - Share one flavor's facts, pages or store links with another flavor.
 - Send file contents or source, run builds, or modify the repository in Draft/Audit mode. The
   app's own icon through `set_icon` is the only file that leaves; a resized copy goes to a temp dir.
+  The only repository writes are Wire mode's diff and CI check mode's workflow file, each on an
+  explicit yes.
 - Replace a custom address the developer already has without their yes, or keep retrying slugs
   past five attempts or after `not_in_plan`. Never respell a brand (`paypa1`) to get past the check.
 - Claim a store will accept the pages, or that `app-ads.txt` is verified with any ad network.

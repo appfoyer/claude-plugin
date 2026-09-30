@@ -22,6 +22,7 @@ Then, inside your app's repository:
 | `Is this app store-ready?` | read-only audit against the compliance checklist |
 | `Wire the store-ready links into the app` | after publishing: proposes the in-app privacy/support links as a diff |
 | `Make com.acme.app.pro store-ready` | multi-flavor build: only the named flavors get a site |
+| `Add the AppFoyer drift check` | proposes a GitHub workflow that flags pull requests adding an SDK or permission the pages may not cover |
 
 **Icon and address:** the agent also finds the app's own launcher/store icon in the repository
 (Play 512 icon, the largest `mipmap` raster, or the iOS `AppIcon` marketing image) and uploads it,
