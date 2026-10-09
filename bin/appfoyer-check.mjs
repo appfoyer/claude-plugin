@@ -20501,348 +20501,13 @@ var StoreVerifyResponse = external_exports.object({
 var KV_TTL = {
   host: 60 * 60,
   // 1h, refilled from D1 on miss
-  page: 30 * 24 * 60 * 60,
-  ads: 30 * 24 * 60 * 60
+  page: 24 * 60 * 60,
+  ads: 24 * 60 * 60
 };
-
-// ../shared/src/public.ts
-var DeletionRequestForm = external_exports.object({
-  email: external_exports.email().max(254),
-  note: external_exports.string().trim().max(HARD_CAPS.deletionNoteChars).optional().default(""),
-  "cf-turnstile-response": external_exports.string().min(1).max(4096)
-});
-var AbuseReportForm = external_exports.object({
-  category: external_exports.enum(["phishing", "malware", "impersonation", "illegal", "other"]),
-  note: external_exports.string().trim().max(HARD_CAPS.deletionNoteChars).optional().default(""),
-  "cf-turnstile-response": external_exports.string().min(1).max(4096)
-});
-var SENSITIVE_NOTE_WORDS = [
-  // passwords / codes, several languages
-  "password",
-  "passwd",
-  "passcode",
-  "pass code",
-  "pin",
-  "pin code",
-  "otp",
-  "one[- ]time (code|password)",
-  "verification code",
-  "security code",
-  "auth(entication)? code",
-  "2fa",
-  "two[- ]factor",
-  "parol(um|un|u|umuz|unuz|lar)?",
-  "\u015Fifr\u0259(m|n|si|miz|niz)?",
-  "sifre(m|n|si|miz|niz)?",
-  "\u015Fifre(m|n|si|miz|niz)?",
-  "\u043F\u0430\u0440\u043E\u043B[\u044C\u044F\u044E\u0435]\u043C?",
-  "\u043A\u043E\u0434",
-  "contrase\xF1a",
-  "clave",
-  "mot de passe",
-  "senha",
-  "passwort",
-  "kennwort",
-  "wachtwoord",
-  "has\u0142o",
-  "\u5BC6\u7801",
-  "\u30D1\u30B9\u30EF\u30FC\u30C9",
-  "\uBE44\uBC00\uBC88\uD638",
-  // payment / identity
-  "cvv",
-  "cvc",
-  "card number",
-  "credit card",
-  "debit card",
-  "kart n\xF6mr\u0259si",
-  "iban",
-  "swift",
-  "routing number",
-  "account number",
-  "sort code",
-  "social security",
-  "ssn",
-  "passport",
-  "national id",
-  "date of birth",
-  // crypto
-  "seed phrase",
-  "recovery phrase",
-  "secret phrase",
-  "mnemonic",
-  "private key",
-  "wallet key"
-];
-var SENSITIVE_NOTE_RE = new RegExp(`(^|[^\\p{L}\\p{N}])(${SENSITIVE_NOTE_WORDS.join("|")})([^\\p{L}\\p{N}]|$)`, "iu");
-var SlugSchema = external_exports.string().regex(SLUG_PATTERN, "3-32 chars: a-z, 0-9, hyphen");
-var ClaimSlugRequest = external_exports.object({ slug: SlugSchema });
-var SLUG_CHECK_REASONS = ["ok", "invalid", "reserved", "structural", "brand", "mismatch", "taken", "plan"];
-var SlugCheckResponse = external_exports.object({
-  slug: external_exports.string(),
-  available: external_exports.boolean(),
-  reason: external_exports.enum(SLUG_CHECK_REASONS),
-  /** Human wording for the reason, from the server so the UI never guesses. */
-  message: external_exports.string()
-});
-
-// ../shared/src/downgrade.ts
-var DOWNGRADE_STAGES = ["ads_dark", "frozen", "unpublished"];
-var DowngradeStageSchema = external_exports.enum(DOWNGRADE_STAGES);
-var DowngradeStatus = external_exports.object({
-  /** Day 0 — `subscriptions.canceled_at`, never `past_due` (docs/pricing.md §5). */
-  day0: external_exports.string(),
-  daysElapsed: external_exports.number().int(),
-  /** The one app that keeps its pages. Null before the first sweep has chosen one. */
-  keptAppId: external_exports.string().nullable(),
-  /** How many of the account's apps are already past each stage. */
-  affectedApps: external_exports.number().int(),
-  /** The next thing that happens, and when. Null once the timeline has run out. */
-  next: external_exports.object({ stage: DowngradeStageSchema, inDays: external_exports.number().int(), at: external_exports.string() }).nullable()
-});
-
-// ../shared/src/dashboard.ts
-var MeResponseV2 = external_exports.object({
-  id: external_exports.string(),
-  email: external_exports.string(),
-  name: external_exports.string().nullable(),
-  emailVerified: external_exports.boolean(),
-  entitlement: EntitlementSchema,
-  limits: PlanLimits,
-  appCount: external_exports.number().int(),
-  /** Apps with at least one public page — the number the plan's `apps` limit is compared against. */
-  publishedAppCount: external_exports.number().int(),
-  /** True when the user has accepted the current `TERMS_VERSION` (ADR 0008). False gates the whole dashboard. */
-  termsAccepted: external_exports.boolean(),
-  /** The version the client must send back to `POST /api/me/terms`. */
-  termsVersion: external_exports.string(),
-  /** Operator console visibility only (ADR 0006 §1) — never an authorization signal: the server
-   *  re-checks the `ADMIN_USER_IDS` allowlist on every `/api/admin/*` call. */
-  isAdmin: external_exports.boolean(),
-  /** Mirror domains user sites answer on (ADR 0009). `primary` is what every `url` in the API uses;
-   *  the dashboard may re-address those links onto an alternate for visitors in countries that
-   *  block the primary TLD. Both serve identical content. */
-  userContentDomains: external_exports.object({ primary: external_exports.string(), alternates: external_exports.array(external_exports.string()) }),
-  /** Where the account stands on the non-payment timeline, or null when nothing is running against
-   *  it (docs/pricing.md §5). The dashboard needs the *schedule*, not just the state: "read-only"
-   *  is a fact, "read-only, and the pages come down in four days unless you renew" is actionable. */
-  downgrade: DowngradeStatus.nullable(),
-  /** The operator answered and the developer has not opened the Support screen since (0032). */
-  supportUnread: external_exports.boolean()
-});
-var AcceptTermsRequest = external_exports.object({ version: external_exports.string().min(1).max(32) });
-var CHECKLIST_KEYS = [
-  "plan_limit",
-  "privacy_published",
-  "privacy_customized",
-  "terms_published",
-  "support_published",
-  "support_email",
-  "deletion_published",
-  "deletion_channel",
-  "app_ads_txt",
-  "store_url",
-  "store_verified",
-  "verified",
-  "icon",
-  "apple_eula"
-];
-var ChecklistItem = external_exports.object({
-  key: external_exports.enum(CHECKLIST_KEYS),
-  status: external_exports.enum(["done", "todo", "warning"]),
-  title: external_exports.string(),
-  detail: external_exports.string(),
-  href: external_exports.string(),
-  // dashboard route to fix it
-  page: PageTypeSchema.optional()
-});
-var ChecklistResponse = external_exports.object({ items: external_exports.array(ChecklistItem), done: external_exports.number().int(), total: external_exports.number().int() });
-var API_KEY_SCOPES = ["apps:read", "apps:write", "ads:write"];
-var CreateApiKeyRequest = external_exports.object({
-  name: external_exports.string().trim().min(1).max(60),
-  scopes: external_exports.array(external_exports.enum(API_KEY_SCOPES)).min(1).default([...API_KEY_SCOPES])
-});
-var ApiKeySummary = external_exports.object({
-  id: external_exports.string(),
-  name: external_exports.string(),
-  keyPrefix: external_exports.string(),
-  scopes: external_exports.array(external_exports.enum(API_KEY_SCOPES)),
-  lastUsedAt: external_exports.string().nullable(),
-  createdAt: external_exports.string()
-});
-var ApiKeyCreated = ApiKeySummary.extend({ key: external_exports.string() });
-var DeletionRequestSummary = external_exports.object({
-  id: external_exports.string(),
-  email: external_exports.string(),
-  note: external_exports.string().nullable(),
-  notifiedAt: external_exports.string().nullable(),
-  doneAt: external_exports.string().nullable(),
-  archivedAt: external_exports.string().nullable(),
-  createdAt: external_exports.string()
-});
-var UpdateDeletionRequest = external_exports.union([
-  external_exports.object({ done: external_exports.boolean() }),
-  external_exports.object({ archived: external_exports.boolean() })
-]);
-var DeletionRequestView = external_exports.enum(["active", "archived"]);
-var PublishStatus = external_exports.object({
-  state: external_exports.enum(["live", "publishing"]),
-  /** When the last successful deploy that includes this app's current files happened. */
-  liveSince: external_exports.string().nullable(),
-  /** Seconds the current content has been waiting, when publishing. */
-  waitingSeconds: external_exports.number().int().nullable(),
-  /** Render timestamp of the app's current static files (null until first render). */
-  renderedAt: external_exports.string().nullable(),
-  /** Public URL of the app's publish probe (`/_publish.json`). */
-  probeUrl: external_exports.string()
-});
-var PublishProbeResponse = external_exports.object({ version: external_exports.number().int(), renderedAt: external_exports.string() });
-var DeleteAccountRequest = external_exports.object({ confirmEmail: external_exports.string().min(3).max(320) });
-var AccountExport = external_exports.object({
-  format: external_exports.literal("appfoyer.account-export"),
-  version: external_exports.literal(1),
-  exportedAt: external_exports.string(),
-  account: external_exports.object({
-    id: external_exports.string(),
-    email: external_exports.string(),
-    name: external_exports.string().nullable(),
-    entitlement: EntitlementSchema,
-    createdAt: external_exports.string(),
-    termsVersion: external_exports.string().nullable(),
-    termsAcceptedAt: external_exports.string().nullable()
-  }),
-  apps: external_exports.array(external_exports.object({
-    id: external_exports.string(),
-    slug: external_exports.string(),
-    baseSlug: external_exports.string(),
-    url: external_exports.string(),
-    name: external_exports.string(),
-    platform: external_exports.string(),
-    developerName: external_exports.string(),
-    supportEmail: external_exports.string(),
-    jurisdiction: external_exports.string().nullable(),
-    storeUrlIos: external_exports.string().nullable(),
-    storeUrlsAndroid: external_exports.array(external_exports.string()),
-    status: external_exports.string(),
-    locked: external_exports.boolean(),
-    dataCollection: external_exports.array(external_exports.string()),
-    sdks: external_exports.array(external_exports.string()),
-    description: external_exports.string().nullable(),
-    createdAt: external_exports.string(),
-    updatedAt: external_exports.string(),
-    pages: external_exports.array(external_exports.object({
-      type: PageTypeSchema,
-      markdown: external_exports.string(),
-      published: external_exports.boolean(),
-      updatedAt: external_exports.string(),
-      draftMarkdown: external_exports.string().nullable()
-    })),
-    adsTxt: external_exports.string(),
-    /** Where this app's deletion requests go right now (ADR 0011): its routing mode, and the
-     *  channels a request would reach after the fallback — the account's list is `channels` below. */
-    channelMode: external_exports.enum(["default", "custom"]),
-    notificationChannels: external_exports.array(external_exports.object({ type: external_exports.string(), target: external_exports.string(), verified: external_exports.boolean(), createdAt: external_exports.string() })),
-    deletionRequests: external_exports.array(external_exports.object({
-      email: external_exports.string(),
-      note: external_exports.string().nullable(),
-      createdAt: external_exports.string(),
-      notifiedAt: external_exports.string().nullable(),
-      doneAt: external_exports.string().nullable(),
-      archivedAt: external_exports.string().nullable()
-    }))
-  })),
-  /** The account's notification channels (ADR 0011), masked exactly as the dashboard shows them. */
-  channels: external_exports.array(external_exports.object({ type: external_exports.string(), target: external_exports.string(), verified: external_exports.boolean(), isDefault: external_exports.boolean(), createdAt: external_exports.string() })),
-  apiKeys: external_exports.array(external_exports.object({ prefix: external_exports.string(), scopes: external_exports.array(external_exports.string()), createdAt: external_exports.string(), revokedAt: external_exports.string().nullable() })),
-  /** The support conversation with the operator (0032), oldest first. */
-  support: external_exports.array(external_exports.object({ author: external_exports.enum(["user", "operator"]), body: external_exports.string(), createdAt: external_exports.string() }))
-});
-
-// ../shared/src/channels.ts
-var CHANNEL_TYPES = ["email", "telegram", "slack", "webhook"];
-var WEBHOOK_BLOCKED_DOMAINS = ["appfoyer.com", "appfoyer.page", "appfoyer.app", "appfoyer.site", "h5m1.com"];
-var IPV4_RE = /^\d{1,3}(\.\d{1,3}){3}$/;
-var LOCAL_SUFFIXES = [".localhost", ".local", ".internal", ".lan", ".home.arpa", ".arpa", ".test", ".invalid", ".example"];
-function webhookUrlProblem(raw, extraBlockedHosts = []) {
-  if (raw.length > 2048) return "too_long";
-  let u;
-  try {
-    u = new URL(raw);
-  } catch {
-    return "invalid_url";
-  }
-  if (u.protocol !== "https:") return "https_only";
-  if (u.username || u.password) return "credentials_in_url";
-  if (u.port && u.port !== "443") return "port_not_allowed";
-  const host = u.hostname.toLowerCase().replace(/\.$/, "");
-  if (host.startsWith("[") || host.includes(":") || IPV4_RE.test(host)) return "ip_address_not_allowed";
-  if (!host.includes(".") || host === "localhost" || LOCAL_SUFFIXES.some((s) => host.endsWith(s))) return "private_host";
-  const blocked = [...WEBHOOK_BLOCKED_DOMAINS, ...extraBlockedHosts.map((h) => h.toLowerCase())];
-  if (blocked.some((b) => b && (host === b || host.endsWith(`.${b}`)))) return "own_domain";
-  return null;
-}
-var CreateChannelRequest = external_exports.discriminatedUnion("type", [
-  external_exports.object({ type: external_exports.literal("email"), email: external_exports.email().max(254) }),
-  external_exports.object({ type: external_exports.literal("telegram") }),
-  external_exports.object({ type: external_exports.literal("webhook"), url: external_exports.string().max(2048).refine((u) => webhookUrlProblem(u) === null, { message: "webhook_url_not_allowed" }) })
-]);
-var ChannelSummary = external_exports.object({
-  id: external_exports.string(),
-  type: external_exports.enum(CHANNEL_TYPES),
-  targetMasked: external_exports.string(),
-  verifiedAt: external_exports.string().nullable(),
-  lastSuccessAt: external_exports.string().nullable(),
-  lastError: external_exports.string().nullable(),
-  createdAt: external_exports.string(),
-  /** The account's default channel: every app in `default` mode, and every custom app whose list is empty, goes here. */
-  isDefault: external_exports.boolean(),
-  /** Created for the account from its sign-in address (ADR 0011 §2). */
-  isAccountEmail: external_exports.boolean(),
-  /** Over the plan's per-type limit after a downgrade: kept, but receives nothing until the plan allows it again. */
-  suspendedAt: external_exports.string().nullable(),
-  /** Deliveries that failed in a row; a webhook past the threshold is reported as failing. */
-  consecutiveFailures: external_exports.number().int(),
-  /** Apps whose custom list names this channel (apps on the default are not counted here). */
-  appIds: external_exports.array(external_exports.string()),
-  /** Telegram only, until verified: the deep link the developer opens in Telegram. */
-  telegramLink: external_exports.string().optional(),
-  telegramCode: external_exports.string().optional(),
-  /** Webhook only, and only in the response that created it: the signing secret. Never shown again. */
-  webhookSecret: external_exports.string().optional()
-});
-var VerifyChannelRequest = external_exports.object({ token: external_exports.string().min(16).max(128) });
-var CHANNEL_MODES = ["default", "custom"];
-var AppRoutingRequest = external_exports.object({
-  mode: external_exports.enum(CHANNEL_MODES),
-  /** Ignored for `default`. For `custom`, the account's verified channels this app notifies. */
-  channelIds: external_exports.array(external_exports.string().min(1).max(64)).max(50).default([])
-});
-var AppRoutingResponse = external_exports.object({
-  mode: external_exports.enum(CHANNEL_MODES),
-  channelIds: external_exports.array(external_exports.string()),
-  /** Where a request would be delivered right now, after the fallback. Empty = nowhere yet. */
-  effectiveChannelIds: external_exports.array(external_exports.string()),
-  /** `custom`, but none of its channels can receive anything — the default is used instead. */
-  fellBack: external_exports.boolean()
-});
-var NOTIFY_READY_EXPR = `(
-  EXISTS (SELECT 1 FROM notification_channels c WHERE c.user_id = a.user_id AND c.is_default = 1
-            AND c.verified_at IS NOT NULL AND c.suspended_at IS NULL)
-  OR (a.channel_mode = 'custom' AND EXISTS (
-        SELECT 1 FROM app_channels ac JOIN notification_channels c ON c.id = ac.channel_id
-         WHERE ac.app_id = a.id AND c.user_id = a.user_id AND c.verified_at IS NOT NULL AND c.suspended_at IS NULL))
-)`;
-var NOTIFY_READY_SQL = `SELECT ${NOTIFY_READY_EXPR} AS ready FROM apps a WHERE a.id = ?`;
 
 // ../shared/src/legal.ts
 var MARKETING_ORIGIN = "https://appfoyer.com";
 var MARKETING_HOST = new URL(MARKETING_ORIGIN).hostname;
-
-// ../shared/src/static-serving.ts
-var STATIC_404_HTML = `<!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>Not found</title>
-<style>*{box-sizing:border-box}body{margin:0;font:16px/1.7 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;color:#111318;background:#fff;-webkit-font-smoothing:antialiased}.wrap{max-width:1040px;margin:0 auto;padding:0 32px}.band{background:#f6f7f9;border-bottom:1px solid #e2e5ea;padding:44px 0 36px}.eyebrow{font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#5c6270;margin:0 0 10px}h1{font-size:clamp(28px,4vw,38px);line-height:1.15;letter-spacing:-.022em;font-weight:650;margin:0}main{padding:44px 0 72px}.doc{max-width:680px}p{margin:0 0 16px}.note{color:#5c6270;font-size:14px;margin-top:24px}a{color:#1f4f82;text-underline-offset:3px}@media (max-width:600px){.wrap{padding:0 16px}.band{padding:28px 0 24px}main{padding:28px 0 48px}}</style>
-</head><body><div class="band"><div class="wrap"><p class="eyebrow">Error 404</p><h1>Not found</h1></div></div><main><div class="wrap"><div class="doc"><p>There is no page at this address.</p><p class="note">Addresses like this one are app compliance pages hosted by <a href="${MARKETING_ORIGIN}/" rel="noopener">${MARKETING_HOST}</a> for app developers. The page may have been removed, or the address mistyped.</p></div></div></main></body></html>
-`;
 
 // ../shared/src/link-policy.ts
 var BRAND_LINK_HOST = MARKETING_HOST;
@@ -21008,6 +20673,346 @@ var DEFAULT_RULES = [
 ];
 var STORE_HOSTS = [IOS_STORE_HOST, "itunes.apple.com", "testflight.apple.com", ...ANDROID_STORE_HOSTS, "apps.microsoft.com", "microsoft.com", "github.com", "gitlab.com", "chrome.google.com", "chromewebstore.google.com", "addons.mozilla.org"];
 
+// ../shared/src/public.ts
+var DeletionRequestForm = external_exports.object({
+  email: external_exports.email().max(254),
+  note: external_exports.string().trim().max(HARD_CAPS.deletionNoteChars).optional().default(""),
+  "cf-turnstile-response": external_exports.string().min(1).max(4096)
+});
+var AbuseReportForm = external_exports.object({
+  category: external_exports.enum(["phishing", "malware", "impersonation", "illegal", "other"]),
+  note: external_exports.string().trim().max(HARD_CAPS.deletionNoteChars).optional().default(""),
+  "cf-turnstile-response": external_exports.string().min(1).max(4096)
+});
+var SENSITIVE_NOTE_WORDS = [
+  // passwords / codes, several languages
+  "password",
+  "passwd",
+  "passcode",
+  "pass code",
+  "pin",
+  "pin code",
+  "otp",
+  "one[- ]time (code|password)",
+  "verification code",
+  "security code",
+  "auth(entication)? code",
+  "2fa",
+  "two[- ]factor",
+  "parol(um|un|u|umuz|unuz|lar)?",
+  "\u015Fifr\u0259(m|n|si|miz|niz)?",
+  "sifre(m|n|si|miz|niz)?",
+  "\u015Fifre(m|n|si|miz|niz)?",
+  "\u043F\u0430\u0440\u043E\u043B[\u044C\u044F\u044E\u0435]\u043C?",
+  "\u043A\u043E\u0434",
+  "contrase\xF1a",
+  "clave",
+  "mot de passe",
+  "senha",
+  "passwort",
+  "kennwort",
+  "wachtwoord",
+  "has\u0142o",
+  "\u5BC6\u7801",
+  "\u30D1\u30B9\u30EF\u30FC\u30C9",
+  "\uBE44\uBC00\uBC88\uD638",
+  // payment / identity
+  "cvv",
+  "cvc",
+  "card number",
+  "credit card",
+  "debit card",
+  "kart n\xF6mr\u0259si",
+  "iban",
+  "swift",
+  "routing number",
+  "account number",
+  "sort code",
+  "social security",
+  "ssn",
+  "passport",
+  "national id",
+  "date of birth",
+  // crypto
+  "seed phrase",
+  "recovery phrase",
+  "secret phrase",
+  "mnemonic",
+  "private key",
+  "wallet key"
+];
+var SENSITIVE_NOTE_RE = new RegExp(`(^|[^\\p{L}\\p{N}])(${SENSITIVE_NOTE_WORDS.join("|")})([^\\p{L}\\p{N}]|$)`, "iu");
+var SlugSchema = external_exports.string().regex(SLUG_PATTERN, "3-32 chars: a-z, 0-9, hyphen");
+var ClaimSlugRequest = external_exports.object({ slug: SlugSchema });
+var SLUG_CHECK_REASONS = ["ok", "invalid", "reserved", "structural", "brand", "mismatch", "taken", "plan"];
+var SlugCheckResponse = external_exports.object({
+  slug: external_exports.string(),
+  available: external_exports.boolean(),
+  reason: external_exports.enum(SLUG_CHECK_REASONS),
+  /** Human wording for the reason, from the server so the UI never guesses. */
+  message: external_exports.string()
+});
+
+// ../shared/src/downgrade.ts
+var DOWNGRADE_STAGES = ["ads_dark", "frozen", "unpublished"];
+var DowngradeStageSchema = external_exports.enum(DOWNGRADE_STAGES);
+var DowngradeStatus = external_exports.object({
+  /** Day 0 — `subscriptions.canceled_at`, never `past_due` (docs/pricing.md §5). */
+  day0: external_exports.string(),
+  daysElapsed: external_exports.number().int(),
+  /** The one app that keeps its pages. Null before the first sweep has chosen one. */
+  keptAppId: external_exports.string().nullable(),
+  /** How many of the account's apps are already past each stage. */
+  affectedApps: external_exports.number().int(),
+  /** The next thing that happens, and when. Null once the timeline has run out. */
+  next: external_exports.object({ stage: DowngradeStageSchema, inDays: external_exports.number().int(), at: external_exports.string() }).nullable()
+});
+
+// ../shared/src/dashboard.ts
+var MeResponseV2 = external_exports.object({
+  id: external_exports.string(),
+  email: external_exports.string(),
+  name: external_exports.string().nullable(),
+  emailVerified: external_exports.boolean(),
+  entitlement: EntitlementSchema,
+  limits: PlanLimits,
+  appCount: external_exports.number().int(),
+  /** Apps with at least one public page — the number the plan's `apps` limit is compared against. */
+  publishedAppCount: external_exports.number().int(),
+  /** True when the user has accepted the current `TERMS_VERSION` (ADR 0008). False gates the whole dashboard. */
+  termsAccepted: external_exports.boolean(),
+  /** The version the client must send back to `POST /api/me/terms`. */
+  termsVersion: external_exports.string(),
+  /** Operator console visibility only (ADR 0006 §1) — never an authorization signal: the server
+   *  re-checks the `ADMIN_USER_IDS` allowlist on every `/api/admin/*` call. */
+  isAdmin: external_exports.boolean(),
+  /** Mirror domains user sites answer on (ADR 0009). `primary` is what every `url` in the API uses;
+   *  the dashboard may re-address those links onto an alternate for visitors in countries that
+   *  block the primary TLD. Both serve identical content. */
+  userContentDomains: external_exports.object({ primary: external_exports.string(), alternates: external_exports.array(external_exports.string()) }),
+  /** Where the account stands on the non-payment timeline, or null when nothing is running against
+   *  it (docs/pricing.md §5). The dashboard needs the *schedule*, not just the state: "read-only"
+   *  is a fact, "read-only, and the pages come down in four days unless you renew" is actionable. */
+  downgrade: DowngradeStatus.nullable(),
+  /** The operator answered and the developer has not opened the Support screen since (0032). */
+  supportUnread: external_exports.boolean()
+});
+var AcceptTermsRequest = external_exports.object({ version: external_exports.string().min(1).max(32) });
+var CHECKLIST_KEYS = [
+  "plan_limit",
+  "privacy_published",
+  "privacy_customized",
+  "terms_published",
+  "support_published",
+  "support_email",
+  "deletion_published",
+  "deletion_channel",
+  "app_ads_txt",
+  "store_url",
+  "store_verified",
+  "verified",
+  "icon",
+  "apple_eula"
+];
+var ChecklistItem = external_exports.object({
+  key: external_exports.enum(CHECKLIST_KEYS),
+  status: external_exports.enum(["done", "todo", "warning"]),
+  title: external_exports.string(),
+  detail: external_exports.string(),
+  href: external_exports.string(),
+  // dashboard route to fix it
+  page: PageTypeSchema.optional()
+});
+var ChecklistResponse = external_exports.object({ items: external_exports.array(ChecklistItem), done: external_exports.number().int(), total: external_exports.number().int() });
+var API_KEY_SCOPES = ["apps:read", "apps:write", "ads:write"];
+var CreateApiKeyRequest = external_exports.object({
+  name: external_exports.string().trim().min(1).max(60),
+  scopes: external_exports.array(external_exports.enum(API_KEY_SCOPES)).min(1).default([...API_KEY_SCOPES])
+});
+var ApiKeySummary = external_exports.object({
+  id: external_exports.string(),
+  name: external_exports.string(),
+  keyPrefix: external_exports.string(),
+  scopes: external_exports.array(external_exports.enum(API_KEY_SCOPES)),
+  lastUsedAt: external_exports.string().nullable(),
+  createdAt: external_exports.string(),
+  /** `oauth`: a connection approved in the browser (ADR 0014) — same reach as a key, revoked the same way. */
+  kind: external_exports.enum(["key", "oauth"]),
+  /** OAuth only: the host that published the client's metadata (CIMD); null for a self-registered (DCR) client or a key. */
+  clientHost: external_exports.string().nullable()
+});
+var ApiKeyCreated = ApiKeySummary.extend({ key: external_exports.string() });
+var DeletionRequestSummary = external_exports.object({
+  id: external_exports.string(),
+  email: external_exports.string(),
+  note: external_exports.string().nullable(),
+  notifiedAt: external_exports.string().nullable(),
+  doneAt: external_exports.string().nullable(),
+  archivedAt: external_exports.string().nullable(),
+  createdAt: external_exports.string()
+});
+var UpdateDeletionRequest = external_exports.union([
+  external_exports.object({ done: external_exports.boolean() }),
+  external_exports.object({ archived: external_exports.boolean() })
+]);
+var DeletionRequestView = external_exports.enum(["active", "archived"]);
+var PublishStatus = external_exports.object({
+  state: external_exports.enum(["live", "publishing"]),
+  /** When the last successful deploy that includes this app's current files happened. */
+  liveSince: external_exports.string().nullable(),
+  /** Seconds the current content has been waiting, when publishing. */
+  waitingSeconds: external_exports.number().int().nullable(),
+  /** Render timestamp of the app's current static files (null until first render). */
+  renderedAt: external_exports.string().nullable(),
+  /** Public URL of the app's publish probe (`/_publish.json`). */
+  probeUrl: external_exports.string()
+});
+var PublishProbeResponse = external_exports.object({ version: external_exports.number().int(), renderedAt: external_exports.string() });
+var DeleteAccountRequest = external_exports.object({ confirmEmail: external_exports.string().min(3).max(320) });
+var AccountExport = external_exports.object({
+  format: external_exports.literal("appfoyer.account-export"),
+  version: external_exports.literal(1),
+  exportedAt: external_exports.string(),
+  account: external_exports.object({
+    id: external_exports.string(),
+    email: external_exports.string(),
+    name: external_exports.string().nullable(),
+    entitlement: EntitlementSchema,
+    createdAt: external_exports.string(),
+    termsVersion: external_exports.string().nullable(),
+    termsAcceptedAt: external_exports.string().nullable()
+  }),
+  apps: external_exports.array(external_exports.object({
+    id: external_exports.string(),
+    slug: external_exports.string(),
+    baseSlug: external_exports.string(),
+    url: external_exports.string(),
+    name: external_exports.string(),
+    platform: external_exports.string(),
+    developerName: external_exports.string(),
+    supportEmail: external_exports.string(),
+    jurisdiction: external_exports.string().nullable(),
+    storeUrlIos: external_exports.string().nullable(),
+    storeUrlsAndroid: external_exports.array(external_exports.string()),
+    status: external_exports.string(),
+    locked: external_exports.boolean(),
+    dataCollection: external_exports.array(external_exports.string()),
+    sdks: external_exports.array(external_exports.string()),
+    description: external_exports.string().nullable(),
+    createdAt: external_exports.string(),
+    updatedAt: external_exports.string(),
+    pages: external_exports.array(external_exports.object({
+      type: PageTypeSchema,
+      markdown: external_exports.string(),
+      published: external_exports.boolean(),
+      updatedAt: external_exports.string(),
+      draftMarkdown: external_exports.string().nullable()
+    })),
+    adsTxt: external_exports.string(),
+    /** Where this app's deletion requests go right now (ADR 0011): its routing mode, and the
+     *  channels a request would reach after the fallback — the account's list is `channels` below. */
+    channelMode: external_exports.enum(["default", "custom"]),
+    notificationChannels: external_exports.array(external_exports.object({ type: external_exports.string(), target: external_exports.string(), verified: external_exports.boolean(), createdAt: external_exports.string() })),
+    deletionRequests: external_exports.array(external_exports.object({
+      email: external_exports.string(),
+      note: external_exports.string().nullable(),
+      createdAt: external_exports.string(),
+      notifiedAt: external_exports.string().nullable(),
+      doneAt: external_exports.string().nullable(),
+      archivedAt: external_exports.string().nullable()
+    }))
+  })),
+  /** The account's notification channels (ADR 0011), masked exactly as the dashboard shows them. */
+  channels: external_exports.array(external_exports.object({ type: external_exports.string(), target: external_exports.string(), verified: external_exports.boolean(), isDefault: external_exports.boolean(), createdAt: external_exports.string() })),
+  /** Agent keys and, since ADR 0014, browser-approved agent connections (`kind: "oauth"`). Never a secret. */
+  apiKeys: external_exports.array(external_exports.object({ prefix: external_exports.string(), scopes: external_exports.array(external_exports.string()), createdAt: external_exports.string(), revokedAt: external_exports.string().nullable(), kind: external_exports.enum(["key", "oauth"]), name: external_exports.string(), clientHost: external_exports.string().nullable(), lastUsedAt: external_exports.string().nullable() })),
+  /** The support conversation with the operator (0032), oldest first. */
+  support: external_exports.array(external_exports.object({ author: external_exports.enum(["user", "operator"]), body: external_exports.string(), createdAt: external_exports.string() }))
+});
+
+// ../shared/src/channels.ts
+var CHANNEL_TYPES = ["email", "telegram", "slack", "webhook"];
+var WEBHOOK_BLOCKED_DOMAINS = ["appfoyer.com", "appfoyer.page", "appfoyer.app", "appfoyer.site", "h5m1.com"];
+var IPV4_RE = /^\d{1,3}(\.\d{1,3}){3}$/;
+var LOCAL_SUFFIXES = [".localhost", ".local", ".internal", ".lan", ".home.arpa", ".arpa", ".test", ".invalid", ".example"];
+function webhookUrlProblem(raw, extraBlockedHosts = []) {
+  if (raw.length > 2048) return "too_long";
+  let u;
+  try {
+    u = new URL(raw);
+  } catch {
+    return "invalid_url";
+  }
+  if (u.protocol !== "https:") return "https_only";
+  if (u.username || u.password) return "credentials_in_url";
+  if (u.port && u.port !== "443") return "port_not_allowed";
+  const host = u.hostname.toLowerCase().replace(/\.$/, "");
+  if (host.startsWith("[") || host.includes(":") || IPV4_RE.test(host)) return "ip_address_not_allowed";
+  if (!host.includes(".") || host === "localhost" || LOCAL_SUFFIXES.some((s) => host.endsWith(s))) return "private_host";
+  const blocked = [...WEBHOOK_BLOCKED_DOMAINS, ...extraBlockedHosts.map((h) => h.toLowerCase())];
+  if (blocked.some((b) => b && (host === b || host.endsWith(`.${b}`)))) return "own_domain";
+  return null;
+}
+var CreateChannelRequest = external_exports.discriminatedUnion("type", [
+  external_exports.object({ type: external_exports.literal("email"), email: external_exports.email().max(254) }),
+  external_exports.object({ type: external_exports.literal("telegram") }),
+  external_exports.object({ type: external_exports.literal("webhook"), url: external_exports.string().max(2048).refine((u) => webhookUrlProblem(u) === null, { message: "webhook_url_not_allowed" }) })
+]);
+var ChannelSummary = external_exports.object({
+  id: external_exports.string(),
+  type: external_exports.enum(CHANNEL_TYPES),
+  targetMasked: external_exports.string(),
+  verifiedAt: external_exports.string().nullable(),
+  lastSuccessAt: external_exports.string().nullable(),
+  lastError: external_exports.string().nullable(),
+  createdAt: external_exports.string(),
+  /** The account's default channel: every app in `default` mode, and every custom app whose list is empty, goes here. */
+  isDefault: external_exports.boolean(),
+  /** Created for the account from its sign-in address (ADR 0011 §2). */
+  isAccountEmail: external_exports.boolean(),
+  /** Over the plan's per-type limit after a downgrade: kept, but receives nothing until the plan allows it again. */
+  suspendedAt: external_exports.string().nullable(),
+  /** Deliveries that failed in a row; a webhook past the threshold is reported as failing. */
+  consecutiveFailures: external_exports.number().int(),
+  /** Apps whose custom list names this channel (apps on the default are not counted here). */
+  appIds: external_exports.array(external_exports.string()),
+  /** Telegram only, until verified: the deep link the developer opens in Telegram. */
+  telegramLink: external_exports.string().optional(),
+  telegramCode: external_exports.string().optional(),
+  /** Webhook only, and only in the response that created it: the signing secret. Never shown again. */
+  webhookSecret: external_exports.string().optional()
+});
+var VerifyChannelRequest = external_exports.object({ token: external_exports.string().min(16).max(128) });
+var CHANNEL_MODES = ["default", "custom"];
+var AppRoutingRequest = external_exports.object({
+  mode: external_exports.enum(CHANNEL_MODES),
+  /** Ignored for `default`. For `custom`, the account's verified channels this app notifies. */
+  channelIds: external_exports.array(external_exports.string().min(1).max(64)).max(50).default([])
+});
+var AppRoutingResponse = external_exports.object({
+  mode: external_exports.enum(CHANNEL_MODES),
+  channelIds: external_exports.array(external_exports.string()),
+  /** Where a request would be delivered right now, after the fallback. Empty = nowhere yet. */
+  effectiveChannelIds: external_exports.array(external_exports.string()),
+  /** `custom`, but none of its channels can receive anything — the default is used instead. */
+  fellBack: external_exports.boolean()
+});
+var NOTIFY_READY_EXPR = `(
+  EXISTS (SELECT 1 FROM notification_channels c WHERE c.user_id = a.user_id AND c.is_default = 1
+            AND c.verified_at IS NOT NULL AND c.suspended_at IS NULL)
+  OR (a.channel_mode = 'custom' AND EXISTS (
+        SELECT 1 FROM app_channels ac JOIN notification_channels c ON c.id = ac.channel_id
+         WHERE ac.app_id = a.id AND c.user_id = a.user_id AND c.verified_at IS NOT NULL AND c.suspended_at IS NULL))
+)`;
+var NOTIFY_READY_SQL = `SELECT ${NOTIFY_READY_EXPR} AS ready FROM apps a WHERE a.id = ?`;
+
+// ../shared/src/static-serving.ts
+var STATIC_404_HTML = `<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>Not found</title>
+<style>*{box-sizing:border-box}body{margin:0;font:16px/1.7 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;color:#111318;background:#fff;-webkit-font-smoothing:antialiased}.wrap{max-width:1040px;margin:0 auto;padding:0 32px}.band{background:#f6f7f9;border-bottom:1px solid #e2e5ea;padding:44px 0 36px}.eyebrow{font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#5c6270;margin:0 0 10px}h1{font-size:clamp(28px,4vw,38px);line-height:1.15;letter-spacing:-.022em;font-weight:650;margin:0}main{padding:44px 0 72px}.doc{max-width:680px}p{margin:0 0 16px}.note{color:#5c6270;font-size:14px;margin-top:24px}a{color:#1f4f82;text-underline-offset:3px}@media (max-width:600px){.wrap{padding:0 16px}.band{padding:28px 0 24px}main{padding:28px 0 48px}}</style>
+</head><body><div class="band"><div class="wrap"><p class="eyebrow">Error 404</p><h1>Not found</h1></div></div><main><div class="wrap"><div class="doc"><p>There is no page at this address.</p><p class="note">Addresses like this one are app compliance pages hosted by <a href="${MARKETING_ORIGIN}/" rel="noopener">${MARKETING_HOST}</a> for app developers. The page may have been removed, or the address mistyped.</p></div></div></main></body></html>
+`;
+
 // ../shared/src/page-legal.ts
 var LEGAL_DISCLAIMER = "_This page was generated from a template provided by the hosting platform and completed by the app developer. It is not legal advice. The developer named above is solely responsible for its accuracy and for complying with the laws that apply to them._";
 
@@ -21083,8 +21088,8 @@ var AdminUserDetail = external_exports.object({
   /** Targets are masked exactly as the owner sees them; there is no admin path to the plaintext. */
   /** The account's channels (ADR 0011: channels belong to the account, not to one app). */
   channels: external_exports.array(external_exports.object({ id: external_exports.string(), type: external_exports.string(), target: external_exports.string(), verified: external_exports.boolean(), isDefault: external_exports.boolean() })),
-  apiKeys: external_exports.array(external_exports.object({ prefix: external_exports.string(), name: external_exports.string(), createdAt: external_exports.string(), revokedAt: external_exports.string().nullable() })),
-  sessions: external_exports.array(external_exports.object({ ip: external_exports.string().nullable(), ua: external_exports.string().nullable(), createdAt: external_exports.string(), expiresAt: external_exports.string() }))
+  apiKeys: external_exports.array(external_exports.object({ prefix: external_exports.string(), name: external_exports.string(), createdAt: external_exports.string(), revokedAt: external_exports.string().nullable(), kind: external_exports.enum(["key", "oauth"]), clientHost: external_exports.string().nullable() })),
+  sessions: external_exports.array(external_exports.object({ ip: external_exports.string().nullable(), ua: external_exports.string().nullable(), createdAt: external_exports.string(), expiresAt: external_exports.string(), kind: external_exports.enum(["web", "mobile"]) }))
 });
 var AdminUserSummary = external_exports.object({
   id: external_exports.string(),
@@ -21699,6 +21704,70 @@ function diffBuild(baseline, now) {
   }));
   return { items, drift: items.length > 0 };
 }
+
+// ../shared/src/mobile.ts
+var MobileSessionResponse = external_exports.object({
+  token: external_exports.string(),
+  expiresAt: external_exports.string()
+});
+var PkceChallenge = external_exports.string().regex(/^[A-Za-z0-9_-]{43}$/);
+var PkceVerifier = external_exports.string().regex(/^[A-Za-z0-9._~-]{43,128}$/);
+var MobileHandoffRequest = external_exports.object({ idToken: external_exports.string().min(20).max(4096), challenge: PkceChallenge });
+var MobileHandoffResponse = external_exports.object({ redirect: external_exports.string() });
+var MobileRedeemRequest = external_exports.object({ code: external_exports.string().regex(/^[0-9a-f]{64}$/), verifier: PkceVerifier });
+
+// ../shared/src/oauth.ts
+var OAUTH_REDIRECT_URIS_MAX = 10;
+var AuthMethod = external_exports.string().max(64).optional();
+var DcrRequest = external_exports.object({
+  redirect_uris: external_exports.array(external_exports.string().max(2048)).min(1).max(OAUTH_REDIRECT_URIS_MAX),
+  client_name: external_exports.string().max(200).optional(),
+  token_endpoint_auth_method: AuthMethod,
+  grant_types: external_exports.array(external_exports.string().max(64)).max(10).optional(),
+  response_types: external_exports.array(external_exports.string().max(64)).max(10).optional(),
+  application_type: external_exports.string().max(32).optional(),
+  scope: external_exports.string().max(500).optional()
+});
+var CimdDocument = external_exports.object({
+  client_id: external_exports.string().max(2048),
+  client_name: external_exports.string().min(1).max(200),
+  redirect_uris: external_exports.array(external_exports.string().max(2048)).min(1).max(OAUTH_REDIRECT_URIS_MAX),
+  token_endpoint_auth_method: AuthMethod,
+  client_uri: external_exports.string().max(2048).optional()
+});
+var AuthorizeParams = external_exports.object({
+  response_type: external_exports.string().max(64).optional(),
+  client_id: external_exports.string().max(2048).optional(),
+  redirect_uri: external_exports.string().max(2048).optional(),
+  code_challenge: external_exports.string().max(256).optional(),
+  code_challenge_method: external_exports.string().max(16).optional(),
+  state: external_exports.string().max(2048).optional(),
+  scope: external_exports.string().max(1e3).optional(),
+  resource: external_exports.string().max(2048).optional()
+});
+var AuthorizePreview = external_exports.discriminatedUnion("kind", [
+  external_exports.object({
+    kind: external_exports.literal("consent"),
+    clientName: external_exports.string(),
+    /** CIMD: the host the client's metadata was fetched from. Null for DCR — the name is all we have. */
+    verifiedHost: external_exports.string().nullable(),
+    /** Where the browser goes after Approve: a hostname, or the scheme for an app link. */
+    redirectHost: external_exports.string(),
+    /** Every registered redirect is loopback: any local program could be claiming this name. */
+    loopbackOnly: external_exports.boolean(),
+    scopes: external_exports.array(external_exports.string()),
+    alreadyConnected: external_exports.boolean()
+  }),
+  /** The request is malformed in a way that is the client's to hear about: the page sends the browser back. */
+  external_exports.object({ kind: external_exports.literal("redirect"), redirect: external_exports.string() }),
+  /** The client or its redirect cannot be trusted: shown here, never redirected to (OAuth 2.1 §7.12.2). */
+  external_exports.object({ kind: external_exports.literal("error"), error: external_exports.string(), description: external_exports.string() })
+]);
+var AuthorizeDecisionRequest = external_exports.object({ params: AuthorizeParams, approve: external_exports.boolean() });
+var AuthorizeDecisionResponse = external_exports.union([
+  external_exports.object({ redirect: external_exports.string() }),
+  external_exports.object({ error: external_exports.string(), description: external_exports.string() })
+]);
 
 // src/format.ts
 var KIND = { fact: "data collected", sdk: "SDK", otherSdk: "SDK, not in the store-form catalogue", permission: "permission" };

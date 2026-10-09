@@ -11,7 +11,7 @@ clicks Publish on the review screen. Say this plainly every time you hand off.
 
 Only **derived facts** leave this machine: app name, platform, application/bundle id, SDK and
 permission *names*, and the developer's confirmed answers. Never send file contents, source code,
-secrets, keystores or `.env` values. Never read or print `APPFOYER_API_KEY`. The one file that
+secrets, keystores or `.env` values. Never read or print an API key or `APPFOYER_API_KEY`. The one file that
 does leave is the app's **own launcher/store icon** (step 5b) — it is a public store asset — and
 only through the upload URL `set_icon` returns.
 
@@ -25,8 +25,11 @@ only through the upload URL `set_icon` returns.
 | "Add the AppFoyer drift check", "check my privacy policy in CI" | **CI check**: see the section after Wire mode. Writes one workflow file, on a yes. |
 | "Update the app icon", "change the address to weather-radar" | **Icon / address only**: steps 1 and 3 to find the app(s), then 5b or 5c. No facts, no questions, no drafts. A named address is tried as given; changing an existing custom one still needs the developer's yes. |
 
-If a tool call fails with `missing_scope` or an HTTP 401, stop and tell the developer to create or
-re-export an agent key at the connect URL in the error. Do not retry. Also stop, without retrying, on:
+If a tool call fails with an HTTP 401 or "needs authentication", the connection was never approved
+or was disconnected: tell the developer to run `/mcp`, pick **appfoyer** and choose
+**Authenticate** (their browser opens on AppFoyer to approve it), then run again. With an API key
+(headless setups), a 401 or `missing_scope` means the key was revoked or lacks a scope — they create
+a new one at the connect URL in the error. Do not retry. Also stop, without retrying, on:
 
 - `terms_required` (HTTP 403) — the developer must sign in to the dashboard and accept the current
   Terms of Service; then run again.

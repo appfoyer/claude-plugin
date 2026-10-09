@@ -17,7 +17,7 @@ Google Play and ask for the real id rather than build a store URL from it. `flut
 checks the case-only Android/iOS id difference, the zero AdMob id (no `app-ads.txt` line offered) and
 the dev-dependency Sentry (mentioned, not a fact). Framework rules: `skills/store-ready/references/frameworks.md`.
 
-Dry run (fresh Claude Code, plugin installed, `APPFOYER_API_KEY` exported):
+Dry run (fresh Claude Code, plugin installed; the first call opens the browser to approve the connection):
 
 ```
 cd plugin/examples/android-sample && claude

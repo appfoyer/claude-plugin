@@ -1,7 +1,6 @@
 {
   "appfoyer": {
     "type": "http",
-    "url": "${APPFOYER_MCP_URL:-https://app.appfoyer.com/mcp}",
-    "headers": { "Authorization": "Bearer ${APPFOYER_API_KEY}" }
+    "url": "${APPFOYER_MCP_URL:-https://app.appfoyer.com/mcp}"
   }
 }

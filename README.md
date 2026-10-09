@@ -8,11 +8,15 @@ publish. The agent cannot publish anything.
 ## Install
 
 ```
-export APPFOYER_API_KEY=cpk_…        # from app.appfoyer.com → Agent & API keys (shown once)
 claude
 /plugin marketplace add appfoyer/claude-plugin
 /plugin install appfoyer@appfoyer
 ```
+
+There is no key to create or copy. The first time the agent calls AppFoyer, your browser opens on
+`app.appfoyer.com`: sign in (or create a free account), check the name and where the browser returns
+to, and approve. Claude Code keeps the connection and renews it on its own. If the browser does not
+open, run `/mcp`, pick **appfoyer** and choose **Authenticate**.
 
 Then, inside your app's repository:
 
@@ -38,13 +42,33 @@ derives each one's SDKs and permissions separately (a free flavor's ad SDK never
 flavor's privacy policy) and asks which ones to set up. Name the package ids in your prompt and it
 skips the question. Build types (`debug`, `staging`) never get a site.
 
+## No browser on that machine?
+
+A remote server, a container or a scripted run cannot open the approval page. Use an API key there
+instead: create one at `app.appfoyer.com` → **Agent & API keys** → *API key — for CI and headless use*
+(shown once), then add the server with the key in its header:
+
+```
+export APPFOYER_API_KEY=cpk_…
+claude mcp add --transport http appfoyer-key https://app.appfoyer.com/mcp --header "Authorization: Bearer $APPFOYER_API_KEY"
+```
+
+A key reaches exactly what a browser connection does: drafts, never publishing.
+
+## Other MCP clients
+
+claude.ai, Claude Desktop, Cursor and VS Code can connect to `https://app.appfoyer.com/mcp` as a
+remote (HTTP) MCP server, with the same approval page. They get the tools; the step-by-step workflow
+that reads your build files is this plugin's skill, which runs in Claude Code.
+
 ## What leaves your machine
 
 Only **derived facts**: the app name, platform, bundle/application id, the names of SDKs and
 permissions found, and the answers you confirm (company name, support email, jurisdiction, store
 URLs). Never source code, never secrets. The only file that leaves is the app's own icon, sent
-once through a single-use upload URL. The API key travels only in the
-`Authorization` header that Claude Code fills from `APPFOYER_API_KEY`; the skill never reads it.
+once through a single-use upload URL. The connection's tokens are held by Claude Code, not by the
+skill: the access token lives one hour and is renewed automatically, and the skill never reads it
+(nor an API key, if you use one).
 
 **One file in your repository:** `appfoyer.json`, a record of the SDKs, data types and permissions
 the pages were written from. The plugin's bundled scanner (`bin/appfoyer-check.mjs`, build files only)
@@ -52,10 +76,12 @@ writes it at the end of each run; nothing in it is sent anywhere. Commit it, and
 Action [`appfoyer/check-action`](https://github.com/appfoyer/check-action) flags every later pull
 request that adds something the pages may not cover. The agent never commits or pushes.
 
-Revoke the key at any time in the dashboard; the next call fails immediately.
+Disconnect at any time on the dashboard's **Agent** page (the same list shows API keys, with
+**Revoke**); the next call fails immediately.
 
-Staging or self-hosted endpoint: set `APPFOYER_MCP_URL` (default `https://app.appfoyer.com/mcp`)
-before starting Claude Code, e.g. `export APPFOYER_MCP_URL=https://staging.appfoyer.com/mcp`.
+Another endpoint (a staging environment): set `APPFOYER_MCP_URL` (default
+`https://app.appfoyer.com/mcp`) before starting Claude Code; the approval page is then that
+environment's.
 
 ## Guarantees
 
