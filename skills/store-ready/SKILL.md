@@ -30,7 +30,9 @@ files and need no AppFoyer account. If the AppFoyer tools are not available in t
 first call fails with HTTP 401 / "needs authentication", do that local work first and ask the
 developer to connect only when there is something to save (step 4b). In every other mode, tell the
 developer to run `/mcp`, pick **appfoyer** and choose **Authenticate** (their browser opens on
-AppFoyer, where they sign in or create a free account and approve), then say "continue". With an API key
+AppFoyer, where they sign in or create a free account and approve), then say "continue" — `/mcp` exists in
+the terminal `claude` only; from the desktop app they connect once in a terminal and start a new
+session. With an API key
 (headless setups), a 401 or `missing_scope` means the key was revoked or lacks a scope — they create
 a new one at the connect URL in the error. Do not retry. Also stop, without retrying, on:
 
@@ -146,18 +148,26 @@ numbered list in the same file. Wait for the answers. Nothing has been sent yet.
 
 Everything so far happened on this machine. Print a short summary of what is ready: per app (one
 per flavor) the name, application/bundle id, the facts with their sources, and the five pages plus
-`app-ads.txt` that will be drafted from them. Then say, in your own words but with every point:
+`app-ads.txt` that will be drafted from them. Then print, verbatim:
 
-- Saving these as drafts needs a free AppFoyer account; nothing is public until they click Publish.
-- Run `/mcp`, pick **appfoyer**, choose **Authenticate**. The browser opens on AppFoyer: sign in or
-  create the account (about a minute), accept the Terms, approve.
-- Then say **"continue"** — the facts and answers above are kept; nothing is asked again.
+> **Your facts and answers are ready — nothing has been sent yet.** Saving them as drafts needs a
+> free AppFoyer account; nothing goes public until you click Publish.
+>
+> 1. In a terminal `claude` session, run `/mcp`, pick **appfoyer**, choose **Authenticate**. Your
+>    browser opens on AppFoyer: sign in or create the account, accept the Terms, approve.
+> 2. **In the terminal:** come back to this session and say **continue**.
+>    **In the desktop app or another app without `/mcp`:** do step 1 in a terminal once, then start
+>    a **new session** here and ask again — a running session does not pick up a new connection.
 
 Stop and wait. On "continue", do step 3 (`list_apps`) now. If it finds an existing app for a flavor
 — a developer who had disconnected — treat that flavor as a re-run: `get_app`, compare its
 `dataCollection` with the answers given, and ask only about a difference. Then go on to step 5.
-If the call still fails with 401, say the connection is not approved yet and repeat the three
-lines above once; do not loop.
+
+If the AppFoyer tools are still missing or the call still fails with 401, do not loop and do not
+promise that anything carries over. Say once: this session cannot see the connection; once `/mcp`
+in a terminal shows appfoyer as connected, start a new session and ask again — the build is re-read
+in seconds and the same questions come back. Then print the developer's answers as a short list
+they can reuse, and stop.
 
 ### 5. `create_app` / `create_apps` (or `update_app`)
 

@@ -20,6 +20,10 @@ when there is something to save. The first time the agent calls AppFoyer, your b
 to, and approve. Claude Code keeps the connection and renews it on its own. If the browser does not
 open, run `/mcp`, pick **appfoyer** and choose **Authenticate**.
 
+**Claude Code desktop app:** `/mcp` is a terminal command. Connect once from a terminal (`claude`,
+then `/mcp` → **appfoyer** → **Authenticate**), then start a new session in the desktop app — a
+session that was already running does not see the new connection.
+
 Claude Code does not refresh a third-party marketplace on its own. To get new versions, run `/plugin`,
 open **Marketplaces**, pick **appfoyer** and choose **Enable auto-update** (or update by hand with
 `claude plugin update appfoyer@appfoyer`).
