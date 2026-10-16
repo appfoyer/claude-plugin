@@ -20,6 +20,10 @@ when there is something to save. The first time the agent calls AppFoyer, your b
 to, and approve. Claude Code keeps the connection and renews it on its own. If the browser does not
 open, run `/mcp`, pick **appfoyer** and choose **Authenticate**.
 
+Claude Code does not refresh a third-party marketplace on its own. To get new versions, run `/plugin`,
+open **Marketplaces**, pick **appfoyer** and choose **Enable auto-update** (or update by hand with
+`claude plugin update appfoyer@appfoyer`).
+
 Then, inside your app's repository:
 
 | Say | What happens |
