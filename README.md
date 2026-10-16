@@ -13,7 +13,9 @@ claude
 /plugin install appfoyer@appfoyer
 ```
 
-There is no key to create or copy. The first time the agent calls AppFoyer, your browser opens on
+There is no key to create or copy, and no account is needed to start: the agent reads your build,
+shows what it found and asks its questions first, all on your machine. It asks you to connect only
+when there is something to save. The first time the agent calls AppFoyer, your browser opens on
 `app.appfoyer.com`: sign in (or create a free account), check the name and where the browser returns
 to, and approve. Claude Code keeps the connection and renews it on its own. If the browser does not
 open, run `/mcp`, pick **appfoyer** and choose **Authenticate**.

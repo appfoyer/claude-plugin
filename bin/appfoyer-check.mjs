@@ -21183,6 +21183,27 @@ var AdminMaintenanceReport = external_exports.object({
 var RepublishScope = external_exports.enum(["verified", "all"]);
 var AdminRepublishRequest = AdminReason.extend({ scope: RepublishScope });
 var AdminRepublishResult = external_exports.object({ scope: RepublishScope, queued: external_exports.number() });
+var FUNNEL_WINDOWS = [7, 30, 90, 180];
+var FunnelWindow = external_exports.coerce.number().int().refine((n) => FUNNEL_WINDOWS.includes(n));
+var FUNNEL_STEPS = ["signed_up", "terms", "first_app", "first_publish", "paid"];
+var FunnelStepId = external_exports.enum([...FUNNEL_STEPS, "agent"]);
+var AdminFunnel = external_exports.object({
+  days: external_exports.number(),
+  since: external_exports.string(),
+  generatedAt: external_exports.string(),
+  /** Operator accounts (`ADMIN_USER_IDS`) are left out; this says how many were. */
+  excludedOperators: external_exports.number(),
+  steps: external_exports.array(external_exports.object({
+    id: FunnelStepId,
+    users: external_exports.number(),
+    /** Median hours from sign-up to this step, over the accounts that reached it; null when unknown. */
+    medianHours: external_exports.number().nullable()
+  })),
+  /** How each account's first app was created. `form` = web or phone, before 2026-10-15 recorded which. */
+  firstAppVia: external_exports.object({ agent: external_exports.number(), web: external_exports.number(), mobile: external_exports.number(), form: external_exports.number() }),
+  /** Accounts older than FUNNEL_STALL_DAYS that reached `after` and not the next step of the chain. */
+  stalled: external_exports.array(external_exports.object({ after: FunnelStepId, users: external_exports.number() }))
+});
 
 // ../shared/src/store-forms.ts
 var FACT_LABEL = {
@@ -21718,9 +21739,11 @@ var MobileRedeemRequest = external_exports.object({ code: external_exports.strin
 
 // ../shared/src/oauth.ts
 var OAUTH_REDIRECT_URIS_MAX = 10;
+var OAUTH_DCR_REDIRECT_URIS_MAX = 5;
+var OAUTH_DCR_REDIRECT_URI_MAX_LENGTH = 512;
 var AuthMethod = external_exports.string().max(64).optional();
 var DcrRequest = external_exports.object({
-  redirect_uris: external_exports.array(external_exports.string().max(2048)).min(1).max(OAUTH_REDIRECT_URIS_MAX),
+  redirect_uris: external_exports.array(external_exports.string().max(OAUTH_DCR_REDIRECT_URI_MAX_LENGTH)).min(1).max(OAUTH_DCR_REDIRECT_URIS_MAX),
   client_name: external_exports.string().max(200).optional(),
   token_endpoint_auth_method: AuthMethod,
   grant_types: external_exports.array(external_exports.string().max(64)).max(10).optional(),

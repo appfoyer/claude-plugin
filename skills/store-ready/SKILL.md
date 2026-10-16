@@ -25,9 +25,12 @@ only through the upload URL `set_icon` returns.
 | "Add the AppFoyer drift check", "check my privacy policy in CI" | **CI check**: see the section after Wire mode. Writes one workflow file, on a yes. |
 | "Update the app icon", "change the address to weather-radar" | **Icon / address only**: steps 1 and 3 to find the app(s), then 5b or 5c. No facts, no questions, no drafts. A named address is tried as given; changing an existing custom one still needs the developer's yes. |
 
-If a tool call fails with an HTTP 401 or "needs authentication", the connection was never approved
-or was disconnected: tell the developer to run `/mcp`, pick **appfoyer** and choose
-**Authenticate** (their browser opens on AppFoyer to approve it), then run again. With an API key
+**Not connected yet is not an error.** In Draft and Audit mode, steps 1, 1b, 2 and 4 read only local
+files and need no AppFoyer account. If the AppFoyer tools are not available in this session, or the
+first call fails with HTTP 401 / "needs authentication", do that local work first and ask the
+developer to connect only when there is something to save (step 4b). In every other mode, tell the
+developer to run `/mcp`, pick **appfoyer** and choose **Authenticate** (their browser opens on
+AppFoyer, where they sign in or create a free account and approve), then say "continue". With an API key
 (headless setups), a 401 or `missing_scope` means the key was revoked or lacks a scope — they create
 a new one at the connect URL in the error. Do not retry. Also stop, without retrying, on:
 
@@ -122,6 +125,9 @@ fails → go on without it and say so in one line.
 
 ### 3. Check for an existing app (re-runs)
 
+**Not connected yet** → skip this step for now, go to step 4, and do it right after 4b. A developer
+who has not connected has no apps to re-run, except one who disconnected; 4b catches that case.
+
 Call `list_apps`. Match **per selected flavor**, in this order: the application id inside the Play
 URL (`…details?id=<applicationId>`), then the app name. A match is a **re-run** for that flavor:
 call `get_app`, diff your fact list against `dataCollection`, and continue with `update_app` +
@@ -135,6 +141,23 @@ the **`AskUserQuestion` tool** — selectable options, proposed defaults pre-fil
 option, "Other" for free text — in at most two rounds of ≤ 4 questions each, exactly as laid out
 in `references/questions.md`. If the tool is not available in this agent, fall back to the plain
 numbered list in the same file. Wait for the answers. Nothing has been sent yet.
+
+### 4b. Connect — only when not connected yet
+
+Everything so far happened on this machine. Print a short summary of what is ready: per app (one
+per flavor) the name, application/bundle id, the facts with their sources, and the five pages plus
+`app-ads.txt` that will be drafted from them. Then say, in your own words but with every point:
+
+- Saving these as drafts needs a free AppFoyer account; nothing is public until they click Publish.
+- Run `/mcp`, pick **appfoyer**, choose **Authenticate**. The browser opens on AppFoyer: sign in or
+  create the account (about a minute), accept the Terms, approve.
+- Then say **"continue"** — the facts and answers above are kept; nothing is asked again.
+
+Stop and wait. On "continue", do step 3 (`list_apps`) now. If it finds an existing app for a flavor
+— a developer who had disconnected — treat that flavor as a re-run: `get_app`, compare its
+`dataCollection` with the answers given, and ask only about a difference. Then go on to step 5.
+If the call still fails with 401, say the connection is not approved yet and repeat the three
+lines above once; do not loop.
 
 ### 5. `create_app` / `create_apps` (or `update_app`)
 
