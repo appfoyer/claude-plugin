@@ -21778,6 +21778,8 @@ var AuthorizePreview = external_exports.discriminatedUnion("kind", [
     redirectHost: external_exports.string(),
     /** Every registered redirect is loopback: any local program could be claiming this name. */
     loopbackOnly: external_exports.boolean(),
+    /** AppFoyer's own client (the Chrome extension): built into the server, not a third party. */
+    firstParty: external_exports.boolean(),
     scopes: external_exports.array(external_exports.string()),
     alreadyConnected: external_exports.boolean()
   }),
