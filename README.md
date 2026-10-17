@@ -71,6 +71,13 @@ claude.ai, Claude Desktop, Cursor and VS Code can connect to `https://app.appfoy
 remote (HTTP) MCP server, with the same approval page. They get the tools; the step-by-step workflow
 that reads your build files is this plugin's skill, which runs in Claude Code.
 
+## Chrome extension
+
+The free [AppFoyer Chrome extension](https://chromewebstore.google.com/detail/aakkoeckkgpkejgbcgpklcdenbmhpnjn)
+opens a side panel next to Google Play Console and App Store Connect: what each page asks for, field by
+field, and — once you connect, read-only — the values and store-form answers this plugin drafted, ready
+to copy. It never fills in or submits anything. More: https://appfoyer.com/chrome
+
 ## What leaves your machine
 
 Only **derived facts**: the app name, platform, bundle/application id, the names of SDKs and
